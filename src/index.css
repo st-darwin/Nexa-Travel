@@ -438,7 +438,7 @@
     @apply text-sm md:text-base font-semibold;
   }
   .button-class {
-    @apply !bg-primary-100 !px-4 !rounded-lg !flex !items-center !justify-center !gap-1.5 !shadow-none;
+    @apply !bg-primary-100  !py-5  !px-4 !rounded-lg !flex !items-center !justify-center !gap-1.5 !shadow-none;
   }
   .button-class-secondary {
     @apply !bg-white !px-4 !rounded-lg !flex !items-center !justify-center !gap-1.5 !shadow-sm;
@@ -552,4 +552,116 @@ h1 , h2 , h3 {
 /* Specifically target Syncfusion components if they don't inherit correctly */
 .e-sidebar, .e-sidebar * {
   font-family: 'Poppins', sans-serif !important;
+}
+/* =========================================
+   PREMIUM SAAS GRID STYLING
+   ========================================= */
+
+/* 1. The Main Container - Floating & Borderless */
+.e-grid {
+  border: none !important;
+  border-radius: 16px !important;
+  background-color: #ffffff !important;
+  font-family: inherit !important;
+  box-shadow: none !important;
+}
+
+/* 2. The Header - Micro-typography & Spacing */
+.e-grid .e-gridheader {
+  border-bottom: 1px solid #f1f5f9 !important; /* Tailwind slate-100 */
+  border-top: none !important;
+  background-color: #ffffff !important;
+}
+
+.e-grid .e-headercell {
+  background-color: #ffffff !important;
+  color: #64748b !important; /* Tailwind slate-500 */
+  font-size: 11px !important;
+  font-weight: 500 !important; /* Medium weight, not too bold */
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 16px 24px !important;
+  border: none !important;
+}
+
+/* Remove the hover effect on headers to keep it clean */
+.e-grid .e-headercell:hover {
+  background-color: #ffffff !important;
+}
+
+/* 3. The Rows - Crisp & Breathable */
+.e-grid .e-rowcell {
+  border-bottom: 1px solid #f8fafc !important; /* Tailwind slate-50 */
+  border-right: none !important;
+  border-left: none !important;
+  padding: 16px 24px !important;
+  font-size: 14px !important;
+  color: #0f172a !important; /* Tailwind slate-900 for high contrast data */
+}
+
+/* Remove bottom border from the very last row */
+.e-grid .e-row:last-child .e-rowcell {
+  border-bottom: none !important;
+}
+
+/* 4. The Hover State - Whisper Quiet */
+.e-grid .e-row:hover .e-rowcell {
+  background-color: #f8fafc !important; /* Tailwind slate-50 */
+  cursor: pointer;
+}
+
+/* 5. Kill Default Outlines & Selection Rings */
+.e-grid .e-focused, 
+.e-grid .e-focused:not(.e-menu-item) {
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+.e-grid .e-selectionbackground {
+  background-color: #f1f5f9 !important; /* Tailwind slate-100 */
+  color: inherit !important;
+}
+
+/* 1. The Main Input Container */
+.e-control-wrapper.e-combobox.nexa-soft-input {
+  background-color: #f0f7ff !important; /* Very pale blue */
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 16px !important; /* Deep rounded corners */
+  padding: 5px 15px !important;
+  transition: all 0.3s ease;
+  height: 50px !important;
+}
+
+/* 2. Hover & Focus States */
+.e-control-wrapper.e-combobox.nexa-soft-input:hover {
+  border-color: #cbd5e1 !important;
+}
+
+.e-control-wrapper.e-combobox.nexa-soft-input.e-input-focus {
+  border-color: #3b82f6 !important; /* Brand Blue */
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* 3. The Dropdown Popup List */
+.e-dropdownbase.nexa-popup-style {
+  border-radius: 16px !important;
+  margin-top: 8px !important;
+  border: none !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+  overflow: hidden;
+}
+
+/* 4. Individual Country Items */
+.e-dropdownbase.nexa-popup-style .e-list-item {
+  padding: 12px 20px !important;
+  font-family: 'Poppins', sans-serif;
+  color: #475569;
+}
+
+.e-dropdownbase.nexa-popup-style .e-list-item.e-hover,
+.e-dropdownbase.nexa-popup-style .e-list-item.e-active {
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+  font-weight: 500;
 }
