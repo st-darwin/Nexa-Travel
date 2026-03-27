@@ -447,7 +447,7 @@
     @apply text-sm font-normal text-gray-100;
   }
   .form-input {
-    @apply p-3.5 border border-light-400 rounded-xl text-base text-dark-300 font-normal;
+    @apply outline-none p-3.5 border border-light-400  rounded-xl text-base text-dark-300 font-normal;
   }
   .comboBox-popup {
     @apply absolute z-10 top-24 bg-white border border-gray-200 rounded-xl shadow-200 h-[250px] w-full md:max-w-[660px] overflow-hidden;
@@ -622,46 +622,25 @@ h1 , h2 , h3 {
   color: inherit !important;
 }
 
-/* 1. The Main Input Container */
-.e-control-wrapper.e-combobox.nexa-soft-input {
-  background-color: #f0f7ff !important; /* Very pale blue */
-  border: 1.5px solid #e2e8f0 !important;
-  border-radius: 16px !important; /* Deep rounded corners */
-  padding: 5px 15px !important;
-  transition: all 0.3s ease;
-  height: 50px !important;
+/* 1. Remove the default Syncfusion focus border and shadow */
+.e-input-group.e-input-focus, 
+.e-input-group.e-control-wrapper.e-input-focus, 
+.e-float-input.e-input-group.e-input-focus,
+.e-control.e-combobox.e-input-focus {
+  /* Set border to your brand color or keep it neutral */
+  border-color: var(--color-primary-100) !important; 
+  /* This kills the glowing blue outline/shadow */
+  box-shadow: none !important; 
 }
 
-/* 2. Hover & Focus States */
-.e-control-wrapper.e-combobox.nexa-soft-input:hover {
-  border-color: #cbd5e1 !important;
+/* 2. Specifically for the ComboBox wrapper */
+.e-control-wrapper.combo-box.e-input-focus {
+  box-shadow: none !important;
+  outline: none !important;
 }
 
-.e-control-wrapper.e-combobox.nexa-soft-input.e-input-focus {
-  border-color: #3b82f6 !important; /* Brand Blue */
-  background-color: #ffffff !important;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
-}
-
-/* 3. The Dropdown Popup List */
-.e-dropdownbase.nexa-popup-style {
-  border-radius: 16px !important;
-  margin-top: 8px !important;
-  border: none !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
-  overflow: hidden;
-}
-
-/* 4. Individual Country Items */
-.e-dropdownbase.nexa-popup-style .e-list-item {
-  padding: 12px 20px !important;
-  font-family: 'Poppins', sans-serif;
-  color: #475569;
-}
-
-.e-dropdownbase.nexa-popup-style .e-list-item.e-hover,
-.e-dropdownbase.nexa-popup-style .e-list-item.e-active {
-  background-color: #eff6ff !important;
-  color: #2563eb !important;
-  font-weight: 500;
+/* 3. If you want a very subtle "soft" focus instead of the harsh default */
+.form-input:focus {
+  border-color: lightgray !important;
+  box-shadow: 0 0 0 3px rgba(37, 111, 241, 0.1) !important; /* Soft brand glow */
 }
