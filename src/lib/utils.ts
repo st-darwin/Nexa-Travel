@@ -25,17 +25,36 @@ export function parseMarkdownToJson(markdownText: string): unknown | null {
     console.error("No valid JSON found in markdown text.");
     return null;
 }
+// utils.ts
+export const parseTripData = (rawData: any) => {
+  if (!rawData) return null;
 
-export function parseTripData(jsonString: string): Trip | null {
-    try {
-        const data: Trip = JSON.parse(jsonString);
+  try {
+    const content = rawData.tripDetail;
+    let parsedContent = null;
 
-        return data;
-    } catch (error) {
-        console.error("Failed to parse trip data:", error);
-        return null;
+    // 1. Get the AI text data
+    if (typeof content === 'object' && content !== null) {
+      parsedContent = content;
+    } else if (typeof content === 'string') {
+      parsedContent = JSON.parse(content);
     }
-}
+
+    // 2. MERGE: If we have parsed data, add the images from the top-level rawData
+    if (parsedContent) {
+      return {
+        ...parsedContent,
+        // Grab imgUrls from the main document, fallback to empty array
+        imgUrls: rawData.imgUrls || parsedContent.imgUrls || [] 
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Failed to parse trip data:", error);
+    return null;
+  }
+};
 
 export function getFirstWord(input: string = ""): string {
     return input.trim().split(/\s+/)[0] || "";
