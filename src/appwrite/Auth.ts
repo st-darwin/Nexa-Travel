@@ -4,15 +4,20 @@ import { account, appwriteConfig } from "./client";
 import { redirect } from "react-router-dom";
 import { database } from "./client";
 
-export const loginWithGoogle =async() =>{
+export const loginWithGoogle = async () => {
     try {
-        account.createOAuth2Session(
-            OAuthProvider.Google
-        )
-}
-catch (error) {
-    console.error("Google login failed:", error);
-}
+        // We define where the user goes after the Google pop-up finishes
+        const successUrl = `${window.location.origin}/`; // Goes to your Dashboard
+        const failureUrl = `${window.location.origin}/sign-in`; // Goes back to Sign-In if they cancel
+
+        await account.createOAuth2Session(
+            OAuthProvider.Google,
+            successUrl,
+            failureUrl
+        );
+    } catch (error) {
+        console.error("Google login failed:", error);
+    }
 }
 
 
@@ -28,30 +33,45 @@ catch (error) {
 }
 }
 
-
-export const getUser =async() =>{
+export const getUser = async () => {
     try {
-        const user = await account.get() // get the current user session
+        // 1. Get the current account session
+        const user = await account.get(); 
 
-        if(!user) return redirect('/sign-in') // redirect to sign-in if no user session exists
-       // check if user data exists in the database, if not create a new user document and return it
-        const {documents} =await database.listDocuments(
+        // 2. Check the database for this specific accountId
+        const { documents } = await database.listDocuments(
             appwriteConfig.databaseId,
             appwriteConfig.userCollectionId,
             [
+                // check accountid = $id 
                 Query.equal("accountId", user.$id),
-                Query.select(["name", "email" , "imageUrl" ,"dateTime" , "accountId" ])
+               Query.select([
+                    "$id", 
+                    "name", 
+                    "email", 
+                    "imageUrl", 
+                    "accountId", 
+                    "dateTime"
+                   
+                ])
             ]
-        )
-        if(documents.length === 0){
-            return await storeUserData() // if no user data exists in the database, create a new user document and return it
+        );
+
+        // 3. If user exists in DB, return them
+        if (documents.length > 0) {
+            return documents[0];
         }
-        
-}
-catch (error) {
-    console.error("Google getUser failed:", error);
-}
-}
+
+        // 4. If session exists but no DB document, create one
+        return await storeUserData();
+
+    } catch (error) {
+        // Appwrite throws a 401 if no session exists. 
+        // We log it and return null so the Loader can handle the redirect.
+        console.error("Auth Utility: No session or user found", error);
+        return null; 
+    }
+};
 
 
 
@@ -81,25 +101,24 @@ catch (error) {
 }
 }
 
-
-export const storeUserData =async() =>{
+export const storeUserData = async () => {
     try {
-          const user = await account.get() // get the current user session
-          
-          if(!user) return redirect('/sign-in') // redirect to sign-in if no user session exists
+        
+        const user = await account.get();
+        const googlePhoto = user.prefs?.avatar || "";
+        if (!user) return null;
 
-          const {documents} =await database.listDocuments(
+        // Check if exists first
+        const { documents } = await database.listDocuments(
             appwriteConfig.databaseId,
             appwriteConfig.userCollectionId,
-            [
-                Query.equal("accountId", user.$id),
-            ]
-        )
-        if (documents.length > 0) return documents[0] // if user data already exists in the database, return it
-         // else create a new user document in the database with the user's information
-         
-         const imageUrl = await getGooglePicture() // get the user's profile picture from Google
-         const newUser = await database.createDocument(
+            [Query.equal("accountId", user.$id)]
+        );
+
+        if (documents.length > 0) return documents[0];
+
+        // Create new if doesn't exist
+        const newUser = await database.createDocument(
             appwriteConfig.databaseId,
             appwriteConfig.userCollectionId,
             ID.unique(),
@@ -107,17 +126,19 @@ export const storeUserData =async() =>{
                 accountId: user.$id,
                 name: user.name,
                 email: user.email,
-                imageUrl: imageUrl,
-                dateTime: new Date()
-            }
-        )
-        return newUser // return the newly created user document
+               
+                dateTime: new Date().toISOString(),
+                imageUrl: googlePhoto || `https://ui-avatars.com/api/?name=${user.name}&background=random`,
 
-}
-catch (error) {
-    console.error("Google storeUserData failed:", error);
-}
-}
+            }
+        );
+        return newUser;
+    } catch (error) {
+        console.error("Store user data failed:", error);
+        return null;
+    }
+};
+
 
 export const getExistingUser =async() =>{
     try {
@@ -141,4 +162,26 @@ export const getExistingUser =async() =>{
 catch (error) {
     console.error("Google getExistingUser failed:", error);
 }
+}
+
+export const getAllUser = async(limit : number , offset: number ) =>{
+ try{
+   const {documents : users , total } =  await database.listDocuments(
+    appwriteConfig.databaseId,
+    appwriteConfig.userCollectionId,
+   [ Query.limit(limit) , Query.offset(offset)]
+   )
+   if(total === 0) return { users : [] , total : 0}
+
+   //else
+   return {users , total}
+
+
+
+ }
+ catch(e) {
+    console.log( e , "Error fetching all the users ") 
+    return {users: [] , total: 0}
+
+ }
 }
