@@ -1,4 +1,4 @@
-import { Query } from "appwrite"
+import {  Query } from "appwrite"
 import { appwriteConfig , database } from "./client"
 
 export const getALlTrips = async(limit : number , offset : number) =>{
@@ -23,6 +23,8 @@ export const getALlTrips = async(limit : number , offset : number) =>{
     
 }
 
+
+
 export const getTripById = async(tripId : string) =>{
     const trip = await database.getDocument(
         appwriteConfig.databaseId,
@@ -37,4 +39,9 @@ export const getTripById = async(tripId : string) =>{
 
 
 }
+
+// appwrite/Trips.js
+
+
+
 
