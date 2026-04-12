@@ -1,24 +1,35 @@
-import React from 'react'
-import { Link, NavLink } from 'react-router-dom'
+
+import { Link, NavLink, useLoaderData , useNavigate  } from 'react-router-dom'
 import { sidebarItems } from '../constants'
 import { cn } from '../lib/utils'
 
+
+
 const NavItems = ({ handleClick }: { handleClick: () => void }) => {
-  const user = {
-    name: "Darwin",
-    email: "solomon.dev@gmail.com",
-    imageUrl: "/assets/images/david.webp" 
+const user = useLoaderData()
+const navigate = useNavigate();
+
+const HandleLogout = async() =>{
+  try{
+  
+    navigate('/logout')
   }
+  catch(error){
+    console.error("Logout failed", error);
+  }
+}
+
+
 
   return (
-    <section className="flex h-full flex-col bg-white border-r border-slate-100 p-6 w-72">
+    <section className=" md:pt-15 xl:pt-15  flex h-full flex-col bg-white border-r border-slate-100 p-6 w-72">
       {/* Branding Section */}
-      <Link to="/" className="flex items-center gap-3 px-2 mb-12 group transition-transform active:scale-95">
-        <div className="size-9 flex items-center justify-center  rounded-xl shadow-lg shadow-indigo-200 group-hover:rotate-3 transition-all duration-300">
-          <img className="size-8  " src="/assets/icons/logo.svg" alt="logo" />
+      <Link to="/" className="flex items-center gap-3 md:mt-0 mt-10 px-2 mb-12 group transition-transform active:scale-95">
+        <div className="size-12 flex items-center justify-center  rounded-xl shadow-lg shadow-indigo-200 group-hover:rotate-3 transition-all duration-300">
+          <img className="size-10  " src="/assets/icons/logo1.svg" alt="logo" />
         </div>
         <h1 className="font-bold text-xl tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-          NexaTravel
+          Nexa Travel
         </h1>
       </Link>
 
@@ -66,6 +77,7 @@ const NavItems = ({ handleClick }: { handleClick: () => void }) => {
             <div className="relative">
               <img 
                 src={user?.imageUrl} 
+                  referrerPolicy='no-referrer'
                 alt="profile" 
                 className="size-10 rounded-xl object-cover ring-2 ring-white shadow-sm" 
               />
@@ -78,12 +90,13 @@ const NavItems = ({ handleClick }: { handleClick: () => void }) => {
             </article>
 
             <button 
-              onClick={() => console.log("Logged Out.")}
+              onClick={HandleLogout}
               className="group p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
             >
               <img 
                 src="assets/icons/logout.svg" 
                 alt="logout" 
+              
                 className="size-4 opacity-50 group-hover:opacity-100 transition-opacity" 
               />
             </button>
