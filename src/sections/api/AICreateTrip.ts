@@ -82,7 +82,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
             },
             body: JSON.stringify({
-                model: "deepseek/deepseek-chat", // DeepSeek-V3
+                model: "anthropic/claude-3-haiku", 
                 messages: [
                     { 
                         role: "system", 
