@@ -121,7 +121,7 @@ const Dashboard = () => {
   
   allTrips.length === 0 ? (
   <div className="flex flex-col items-center justify-center py-12 px-4 text-center col-span-full bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-200 mt-4 transition-all hover:bg-gray-50">
-    {/* Soft Glow Icon Container */}
+   
     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 mb-4 ring-8 ring-gray-50">
       <svg 
         className="w-8 h-8 text-gray-400" 
