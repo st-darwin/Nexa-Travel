@@ -1,17 +1,17 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ChipListComponent, ChipsDirective, ChipDirective } from '@syncfusion/ej2-react-buttons';
 import { cn, getFirstWord } from '../lib/utils';
 
 
 const TripCard = ({id , name , location , imgUrl , tags , price}: TripCardProps) => {
-   const path = useLocation()
+ 
   return (
 
    
   <Link 
    className='trip-card'
-  to={ path.pathname === "/" || path.pathname === "/travel" ? `/travel/${id}` : `/trips${id}`}>
+  to={`/trips/${id}`}>
   <img src={imgUrl} alt={name} 
     
   />
