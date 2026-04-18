@@ -23,6 +23,53 @@ export const sidebarItems = [
   },
 ];
 
+
+export const UserSideBarItems =[
+
+ {
+   id: 1 ,
+    icon: "/assets/icons/home.svg",
+    label : "Dashboard",
+    href : "/"
+  },
+
+  {
+    id : 2 ,
+    label : "My Itinerary",
+    icon : "/assets/icons/itinerary.svg",
+    href : "/my-itinerary"
+
+
+  },
+
+  {
+    id : 3 ,
+    label : "AI Strategist",
+    icon : "/assets/icons/strategist.svg",
+    href : "/strategist"
+
+  },
+
+
+  {
+    id : 4 ,
+    label : "Settings",
+    icon : "assets/icons/settings.svg", 
+    href: "/settings"
+      
+  },
+
+  {
+    id : 5,
+    icon: "/assets/icons/archive.svg", // Suggestion: For those "Past Trips"
+    label: "Trip Archive",
+    href: "/archive"
+
+  }
+
+
+]
+
 export const chartOneData: object[] = [
   {
     x: "Jan",
