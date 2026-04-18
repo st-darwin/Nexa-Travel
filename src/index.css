@@ -644,3 +644,25 @@ h1 , h2 , h3 {
   border-color: lightgray !important;
   box-shadow: 0 0 0 3px rgba(37, 111, 241, 0.1) !important; /* Soft brand glow */
 }
+@keyframes shimmer {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(250%); }
+}
+
+/* Add this utility to your tailwind config or just use the style tag below */
+.animate-shimmer {
+  animation: shimmer 1.5s infinite linear;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
