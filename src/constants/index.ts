@@ -1,6 +1,13 @@
 import type { AxisModel } from "@syncfusion/ej2-react-charts";
 import { formatDate } from "../lib/utils";
 
+import { 
+  LayoutDashboard, 
+  Map, 
+  Cpu, 
+  Settings, 
+  History 
+} from "lucide-react";
 
 export const sidebarItems = [
   {
@@ -28,7 +35,7 @@ export const UserSideBarItems =[
 
  {
    id: 1 ,
-    icon: "/assets/icons/home.svg",
+    icon: LayoutDashboard,
     label : "Dashboard",
     href : "/"
   },
@@ -36,7 +43,7 @@ export const UserSideBarItems =[
   {
     id : 2 ,
     label : "My Itinerary",
-    icon : "/assets/icons/itinerary.svg",
+    icon : Map,
     href : "/my-itinerary"
 
 
@@ -45,7 +52,7 @@ export const UserSideBarItems =[
   {
     id : 3 ,
     label : "AI Strategist",
-    icon : "/assets/icons/strategist.svg",
+    icon : Cpu,
     href : "/strategist"
 
   },
@@ -54,14 +61,14 @@ export const UserSideBarItems =[
   {
     id : 4 ,
     label : "Settings",
-    icon : "assets/icons/settings.svg", 
+    icon : Settings, 
     href: "/settings"
       
   },
 
   {
     id : 5,
-    icon: "/assets/icons/archive.svg", // Suggestion: For those "Past Trips"
+    icon: History, 
     label: "Trip Archive",
     href: "/archive"
 
