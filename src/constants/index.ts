@@ -44,7 +44,7 @@ export const UserSideBarItems =[
     id : 2 ,
     label : "My Itinerary",
     icon : Map,
-    href : "/my-itinerary"
+    href : "my-itinerary"
 
 
   },
@@ -53,7 +53,7 @@ export const UserSideBarItems =[
     id : 3 ,
     label : "AI Strategist",
     icon : Cpu,
-    href : "/strategist"
+    href : "strategist"
 
   },
 
@@ -62,7 +62,7 @@ export const UserSideBarItems =[
     id : 4 ,
     label : "Settings",
     icon : Settings, 
-    href: "/settings"
+    href: "settings"
       
   },
 
