@@ -4,9 +4,13 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { Menu, X, ChevronRight } from "lucide-react"; 
 
+import { logoutUser } from '../appwrite/Auth';
+import { useNavigate } from 'react-router-dom';
+
 export const UserMobileSidebar = () => {
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate()
 
   // Lock scroll when menu is open for that "App" feel
   useEffect(() => {
@@ -15,8 +19,17 @@ export const UserMobileSidebar = () => {
 
   const mainItems = UserSideBarItems.slice(0, 3);
   const remainingItems = UserSideBarItems.slice(3);
-
-  return (
+const handleLogout = async () => {
+  try {
+    // Replace 'current' with your session ID if you're tracking specific ones
+    await logoutUser(); // This should log out the current session
+    navigate('/sign-in');
+  } catch (error) {
+    console.error("Logout failed, moving to sign-in anyway:", error);
+    navigate('/sign-in');
+  }
+};
+   return (
     <>
       {/* 1. THE FLOATING DOCK (Soft Glass) */}
       <div className="fixed bottom-8 left-0 right-0 z-[70] flex justify-center px-6 lg:hidden">
@@ -96,7 +109,23 @@ export const UserMobileSidebar = () => {
                 <p className="text-xs text-indigo-600 font-medium">View Profile</p>
              </div>
           </div>
+
+         <div className='my-3 mt-6'>
+           <button 
+              onClick={() => handleLogout()}
+              className="w-full p-6 bg-red-50/40 rounded-[32px] border border-red-100/30 flex items-center justify-between group active:scale-95 transition-all"
+            >
+              <div className="flex items-center gap-5">
+                <div className="size-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-red-50">
+                   <img src="/assets/icons/logout.svg" className="size-5 text-red-500 opacity-80" alt="Logout" />
+                </div>
+                <span className="text-lg font-medium text-red-600">Sign Out</span>
+              </div>
+              <ChevronRight size={18} className="text-red-200 group-hover:text-red-500 transition-colors" />
+            </button>
+         </div>
         </div>
+        
       </div>
     </>
   );
