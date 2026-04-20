@@ -25,31 +25,31 @@ const UserLayout = () => {
   // This detects if any sub-route (Dashboard, Users, etc.) is currently loading
   const isLoading = navigation.state === "loading"
 
-  return (
-    <div className='admin-layout'>
-      <UserMobileSidebar />
+  // Inside UserLayout.tsx
+return (
+  <div className="flex h-screen bg-slate-50 overflow-hidden">
+    {/* Floating Mobile Dock */}
+    <UserMobileSidebar />
 
-      <aside className='w-full max-w-[270px] hidden lg:block'>
-        <SidebarComponent width={270} enableGestures={false}>
-          <UserNavitems handleClick={() => {}} />
-        </SidebarComponent>
-      </aside>
+    {/* Desktop Sidebar */}
+    <aside className="hidden lg:flex h-full">
+      <UserNavitems handleClick={() => {}} />
+    </aside>
 
-      <aside className='children xl:mt-10'>
-        {/* SOFT UI TRANSITION: 
-          If loading, show the skeleton. 
-          If idle, show the actual page (Outlet).
-        */}
-        {isLoading ? (
-          <div className="animate-in fade-in duration-500">
-            <StatsSkeleton />
-          </div>
-        ) : (
+    {/* Main Content Area */}
+    <main className="flex-1 overflow-y-auto px-4 pt-8 pb-32 lg:pb-8 xl:px-12">
+      {isLoading ? (
+        <div className="max-w-7xl mx-auto animate-pulse">
+          <StatsSkeleton />
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto">
           <Outlet context={user} />
-        )}
-      </aside>
-    </div>
-  )
+        </div>
+      )}
+    </main>
+  </div>
+);
 }
 
 export default UserLayout
