@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route,  } from "react-router-dom";
 import Dashboard , {DashboardLoader as AdminLoader }  from "./sections/admin/Dashboard";
 import AdminLayout, { clientLoader as adminLoader } from "./sections/admin/AdminLayout";
 import TripDetails , {loader as tripDetailsLoader} from "./sections/admin/TripDetails";
@@ -7,16 +7,20 @@ import AllUser, { loader as allUserLoader } from './sections/admin/AllUser'; // 
 import Trips ,  {loader as TripsLoader } from "./sections/admin/Trips";
 import CreateTrips , {loader as createTripsLoader} from "./sections/admin/CreateTrips";
 import Logout from "./sections/admin/Logout";
+import UserDashboard from "./sections/User/UserDashboard";
+import { action as createTripAction } from "./sections/api/AICreateTrip";
+import UserLayout ,{ UserClientLoader} from "./sections/User/UserLayout";
+import Archive from "./sections/User/Archive";
+import Settings from "./sections/User/Settings";
+import MyItinerary from "./sections/User/MyItinerary";
+import AIStrategist from "./sections/User/AIStrategist";
 
- // Import your action
- import { action as createTripAction } from "./sections/api/AICreateTrip";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      {/* Admin Protected Group */}
-      <Route element={<AdminLayout />} loader={adminLoader}>
-        {/* Use 'index' for the root of the protected group */}
+      {/* 1. ADMIN AS THE BASE (No /admin prefix) */}
+      <Route path="/" element={<AdminLayout />} loader={adminLoader}>
         <Route index element={<Dashboard />} loader={AdminLoader} />
         <Route path="all-users" element={<AllUser />} loader={allUserLoader} />
         <Route path="trips" element={<Trips />} loader={TripsLoader} />
@@ -31,11 +35,19 @@ const router = createBrowserRouter(
           element={<TripDetails />} 
           loader={tripDetailsLoader} 
         />
-        <Route path="/logout" element={<Logout />} />
+        <Route path="logout" element={<Logout />} />
       </Route>
 
-      {/* Public Routes - Kept outside the AdminLayout guard */}
-      
+      {/* 2. USER SECTION (Specifically under /Home) */}
+      <Route path="/Home" element={<UserLayout />} loader={UserClientLoader}>
+        <Route index element={<UserDashboard />} />
+          <Route path="strategist" element={<AIStrategist/>} />
+        <Route path="archive" element={<Archive />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="my-itinerary" element={<MyItinerary />} />
+      </Route>
+
+      {/* 3. PUBLIC */}
       <Route path="/sign-in" element={<SignIn />} loader={signInLoader} />
     </>
   )
