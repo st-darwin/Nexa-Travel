@@ -1,5 +1,5 @@
 import { Outlet, useLoaderData, useNavigation, redirect } from 'react-router-dom'
-import { SidebarComponent } from "@syncfusion/ej2-react-navigations"
+
 import UserNavitems from '../../components/UserNavItems'
 import { UserMobileSidebar } from '../../components/UserMobileSideBar'
 import StatsSkeleton from '../../components/StatsSkeleton' // Import your skeleton
@@ -12,6 +12,9 @@ export const UserClientLoader = async () => {
     if (!user) return redirect('/sign-in');
 
     const existingUser = await getExistingUser();
+    if(!existingUser) {
+      await storeUserData()
+    }
 
     // If they are an admin, they can stay here or you can 
     // force them back to the root if you want them strictly in Admin mode.
