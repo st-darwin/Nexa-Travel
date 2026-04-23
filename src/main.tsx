@@ -1,15 +1,28 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom' // 1. Import this
+import * as Sentry from "@sentry/react"; // 1. Import Sentry
+
 import './index.css'
 import { registerLicense } from '@syncfusion/ej2-base';
-registerLicense(import.meta.env.VITE_SYNCFUSION_LICENSE_KEY); // Use the environment variable here
 import App from './App.tsx'
+
+// 2. Initialize Sentry before everything else
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN, // Use an env variable for this too!
+  integrations: [
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration(),
+  ],
+  tracesSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+});
+
+// 3. Syncfusion License
+registerLicense(import.meta.env.VITE_SYNCFUSION_LICENSE_KEY);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter> {/* 2. Wrap your App here */}
-      <App />
-    </BrowserRouter>
+    <App />
   </StrictMode>,
 )
