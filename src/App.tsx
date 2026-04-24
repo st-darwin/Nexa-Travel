@@ -7,7 +7,7 @@ import AllUser, { loader as allUserLoader } from './sections/admin/AllUser'; // 
 import Trips ,  {loader as TripsLoader } from "./sections/admin/Trips";
 import CreateTrips , {loader as createTripsLoader} from "./sections/admin/CreateTrips";
 import Logout from "./sections/admin/Logout";
-import UserDashboard from "./sections/User/UserDashboard";
+import UserDashboard , {UserDashboradLoader} from "./sections/User/UserDashboard";
 import { action as createTripAction } from "./sections/api/AICreateTrip";
 import UserLayout ,{ UserClientLoader} from "./sections/User/UserLayout";
 import Archive from "./sections/User/Archive";
@@ -40,7 +40,7 @@ const router = createBrowserRouter(
 
       {/* 2. USER SECTION (Specifically under /Home) */}
       <Route path="/Home" element={<UserLayout />} loader={UserClientLoader}>
-        <Route index element={<UserDashboard />} />
+        <Route index element={<UserDashboard />}  loader={UserDashboradLoader}/>
           <Route path="strategist" element={<AIStrategist/>} />
         <Route path="archive" element={<Archive />} />
         <Route path="settings" element={<Settings />} />
