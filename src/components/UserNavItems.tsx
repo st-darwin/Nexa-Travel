@@ -38,7 +38,7 @@ const UserNavitems = ({ handleClick }: { handleClick: () => void }) => {
                     src={item.icon} 
                     className={cn(
                       "size-5 transition-all duration-300", 
-                      isActive ? "brightness-200 scale-105" : "opacity-60 group-hover:opacity-100"
+                      isActive ? "  brightness-600 scale-105" : "opacity-60 group-hover:opacity-100"
                     )} 
                     alt={item.label}
                   />
