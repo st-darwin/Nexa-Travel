@@ -25,7 +25,7 @@ const UserDashboard = () => {
      <>
      <UserHeader
      title={user.$id ? `Welcome ${user.name} 👋` : "Welcome Guest 👋"}
-     description="View and Manage ready-made itineraries"
+     description="Your world, organized and synchronized in real-time."
      />
      </>
   )
