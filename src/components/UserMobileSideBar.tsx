@@ -1,21 +1,25 @@
 import { useState, useEffect } from 'react';
-import { UserSideBarItems } from "../constants";
-import { Link, useLocation } from "react-router-dom";
+import {  UserSideBarItems } from "../constants";
+import { Link, useLoaderData, useLocation } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { Menu, X, ChevronRight } from "lucide-react"; 
 
 import { logoutUser } from '../appwrite/Auth';
 import { useNavigate } from 'react-router-dom';
 
-export const UserMobileSidebar = () => {
+
+export const UserMobileSidebar =  () => {
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate()
+   const user = useLoaderData()
+
 
   // Lock scroll when menu is open for that "App" feel
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : 'unset';
   }, [isOpen]);
+
 
   const mainItems = UserSideBarItems.slice(0, 3);
   const remainingItems = UserSideBarItems.slice(3);
@@ -28,7 +32,15 @@ const handleLogout = async () => {
     console.error("Logout failed, moving to sign-in anyway:", error);
     navigate('/sign-in');
   }
+
+ 
+
+  
+
+
+
 };
+
    return (
     <>
       {/* 1. THE FLOATING DOCK (Soft Glass) */}
@@ -79,7 +91,7 @@ const handleLogout = async () => {
           isOpen ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
         )}>
           <div className="space-y-1">
-             <p className="text-[11px] font-bold text-indigo-500 uppercase tracking-[0.2em] mb-6">Explore Nexa</p>
+             <p className="text-[11px] font-bold text-indigo-500 uppercase tracking-[0.2em] mb-6">Explore More</p>
             
             {remainingItems.map((item) => (
               <Link
@@ -105,7 +117,7 @@ const handleLogout = async () => {
                 <div className="size-full bg-slate-200 rounded-xl animate-pulse" /> {/* Replace with actual avatar */}
              </div>
              <div>
-                <p className="text-sm font-bold text-slate-900">Premium Member</p>
+                <p className="text-sm font-bold text-slate-900">{user.name}</p>
                 <p className="text-xs text-indigo-600 font-medium">View Profile</p>
              </div>
           </div>
