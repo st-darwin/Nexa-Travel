@@ -1,4 +1,4 @@
-
+// hehehe
 import { useLoaderData } from "react-router-dom";
 import { getUser } from "../../appwrite/Auth"
 import UserHeader from "../../components/UserHeader";
@@ -24,7 +24,7 @@ const UserDashboard = () => {
   return (
      <>
      <UserHeader
-     title={user.$id ? `Welcome ${user.name} 👋` : "Welcome Guest 👋"}
+     title={user.$id ? `Welcome! ${user.name} 👋` : "Welcome Guest 👋"}
      description="Your world, organized and synchronized in real-time."
      />
      </>
