@@ -18,8 +18,8 @@ const UserHeader = ({ title, description, ctaText, ctaUrl }: Props) => {
             {/* The "Anchor" line - subtle and sophisticated */}
             <div className="absolute bottom-0 left-0 h-[1px] w-full bg-gradient-to-r from-dark-100/10 via-dark-100/5 to-transparent" />
             
-            <article className="relative space-y-3">
-                {/* Visual Accent for the 'Stoic' dev vibe */}
+            <article className="relative mt-6 space-y-3">
+               
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-dark-100/40">
                     <Compass size={12} strokeWidth={3} />
                     <span>nexa travel / {isHome ? "Root" : "Node"}</span>
@@ -28,7 +28,7 @@ const UserHeader = ({ title, description, ctaText, ctaUrl }: Props) => {
                 <h1 className={cn(
                     "3text-dark-100 mt-6 tracking-tighter transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1)", 
                     isHome 
-                        ? "text-4xl md:text-7xl font-extrabold" 
+                        ? "text-4xl md:text-6xl font-extrabold" 
                         : "text-3xl md:text-4xl font-bold"
                 )}>
                     {title}
