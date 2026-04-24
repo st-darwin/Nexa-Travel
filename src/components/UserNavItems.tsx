@@ -25,29 +25,40 @@ const UserNavitems = ({ handleClick }: { handleClick: () => void }) => {
 
         {/* Nav List - Improved interaction and weight */}
         <nav className="flex-1 space-y-1 px-1">
-          {UserSideBarItems.map((item) => (
-            <NavLink to={item.href} key={item.id} onClick={handleClick}>
-              {({ isActive }) => (
-                <div className={cn(
-                  "group flex items-center gap-3.5 px-4 my-4 py-3 rounded-2xl transition-all duration-300",
-                  isActive 
-                    ? "bg-slate-900 text-white shadow-lg shadow-slate-200" 
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                )}>
-                  <img 
-                    src={item.icon} 
-                    className={cn(
-                      "size-5 transition-all duration-300", 
-                      isActive ? "  brightness-600 scale-105" : "opacity-60 group-hover:opacity-100"
-                    )} 
-                    alt={item.label}
-                  />
-                  <span className="text-[14px] font-semibold tracking-tight">{item.label}</span>
-                </div>
-              )}
-            </NavLink>
-          ))}
-        </nav>
+  {UserSideBarItems.map((item) => (
+    <NavLink to={item.href} key={item.id} onClick={handleClick}>
+      {({ isActive }) => (
+        <div className={cn(
+          "group flex items-center gap-3.5 px-4 my-4 py-3 rounded-2xl transition-all duration-300",
+          isActive 
+            ? "bg-slate-900 text-white shadow-lg shadow-slate-200" 
+            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+        )}>
+          {/* Icon using CSS Mask for true color control */}
+          <div 
+            style={{
+              maskImage: `url(${item.icon})`,
+              WebkitMaskImage: `url(${item.icon})`,
+              maskSize: 'contain',
+              maskRepeat: 'no-repeat',
+              maskPosition: 'center',
+            }}
+            className={cn(
+              "size-5 transition-all duration-300", 
+              isActive 
+                ? "bg-white scale-110" // Matches white text perfectly
+                : "bg-slate-500 opacity-60 group-hover:opacity-100 group-hover:bg-slate-900"
+            )} 
+          />
+          
+          <span className="text-[14px] font-semibold tracking-tight">
+            {item.label}
+          </span>
+        </div>
+      )}
+    </NavLink>
+  ))}
+</nav>
 
         {/* Profile Card - Modernized with better layering */}
         <div className="mt-auto bg-slate-50/80 p-3 rounded-[24px] flex items-center gap-3 border border-slate-100/50">
