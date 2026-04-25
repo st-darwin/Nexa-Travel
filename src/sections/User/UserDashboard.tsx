@@ -1,4 +1,4 @@
-// hehehe
+
 import { useLoaderData } from "react-router-dom";
 import { getUser } from "../../appwrite/Auth"
 import UserHeader from "../../components/UserHeader";
@@ -32,3 +32,4 @@ const UserDashboard = () => {
 }
 
 export default UserDashboard
+
