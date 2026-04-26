@@ -64,14 +64,14 @@ export const UserSideBarItems =[
     id : 5,
     icon: "/assets/icons/archive.svg",
     label: "Trip Archive",
-    href: "/archive"
+    href: "archive"
 
   },
 
   // Inside your NavItems array
 {
   name: 'AI Travel Chat',
-  href: '/chatBot',
+  href: 'chatBot',
   label:"AI Travel Chat",
   icon: "/assets/icons/chatbot.svg"
   
