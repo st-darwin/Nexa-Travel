@@ -11,7 +11,7 @@ interface Props {
 
 const UserHeader = ({ title, description, ctaText, ctaUrl }: Props) => {
     const location = useLocation()
-    const isHome = location.pathname.includes("/Home")
+    const isHome = location.pathname ==="/Home"
 
     return (
         <header className="relative flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12">
