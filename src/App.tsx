@@ -10,9 +10,9 @@ import Logout from "./sections/admin/Logout";
 import UserDashboard , {UserDashboradLoader} from "./sections/User/UserDashboard";
 import { action as createTripAction } from "./sections/api/AICreateTrip";
 import UserLayout ,{ UserClientLoader} from "./sections/User/UserLayout";
-import Archive from "./sections/User/Archive";
+import Archive  , {loader as userArchiveloader} from "./sections/User/Archive";
 import Settings from "./sections/User/Settings";
-import MyItinerary from "./sections/User/MyItinerary";
+import MyItinerary   from "./sections/User/MyItinerary";
 import AIStrategist from "./sections/User/AIStrategist";
 
 
@@ -42,7 +42,7 @@ const router = createBrowserRouter(
       <Route path="/Home" element={<UserLayout />} loader={UserClientLoader}>
         <Route index element={<UserDashboard />}  loader={UserDashboradLoader}/>
           <Route path="strategist" element={<AIStrategist/>} />
-        <Route path="archive" element={<Archive />} />
+        <Route path="archive" element={<Archive/>} loader={userArchiveloader} />
         <Route path="settings" element={<Settings />} />
         <Route path="my-itinerary" element={<MyItinerary />} />
       </Route>
