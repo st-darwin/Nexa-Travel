@@ -14,6 +14,7 @@ import Archive  , {loader as userArchiveloader} from "./sections/User/Archive";
 import Settings from "./sections/User/Settings";
 import MyItinerary   from "./sections/User/MyItinerary";
 import AIStrategist from "./sections/User/AIStrategist";
+import Chatbot from "./sections/User/Chatbot";
 
 
 const router = createBrowserRouter(
@@ -45,6 +46,7 @@ const router = createBrowserRouter(
         <Route path="archive" element={<Archive/>} loader={userArchiveloader} />
         <Route path="settings" element={<Settings />} />
         <Route path="my-itinerary" element={<MyItinerary />} />
+        <Route path="chatbot" element={<Chatbot />} />
       </Route>
 
       {/* 3. PUBLIC */}
