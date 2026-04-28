@@ -3,8 +3,12 @@ import {type ActionFunctionArgs, data} from "react-router";
 import { parseMarkdownToJson } from "../../lib/utils";
 import { appwriteConfig , database } from "../../appwrite/client";
 import {ID} from "appwrite";
+import { useState } from "react";
+import { incrementUserTripCount } from "../../appwrite/Auth";
+let count = 0; // to keep track of how many times the action has been called, for analytics or other purposes   
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+   
     const {
         country,
         numberOfDays,
@@ -106,6 +110,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         // collect the first cchoce or whatever
         const rawText = aiData.choices[0].message.content;
 
+        count += 1;
+
         // Since DeepSeek is better at clean JSON, we try parsing directly, 
         // but keep your utility as a fallback.
         let trip;
@@ -131,9 +137,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 tripDetail: JSON.stringify(trip),
                 
                 imgUrls : imageUrls || [],
-                userId : userId || 'anonymous'
+                userId : userId || 'anonymous', 
+             
+                
             }
         );
+        // if the useid is there and is not equalto the anonymous do this ..
+
+         if (userId && userId !== 'anonymous') {
+        await incrementUserTripCount(userId);
+    }
 
         return data({ id: result.$id });
         
@@ -142,3 +155,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         console.error('Error generating travel plan: ', e);
     }
 }
+// !: AI creates the trip 
+// 2: Document was created in the database with the trip details and image urls
+// the id was returned to the client and then used to navigate to the trip details page.
