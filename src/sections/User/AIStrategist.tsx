@@ -1,5 +1,7 @@
   
 // ai planner 
+// still cooking tho 
+
 import { useLoaderData } from "react-router-dom";
 import UserHeader from "../../components/UserHeader"
 import { useState } from "react";
@@ -39,7 +41,12 @@ const AIStrategist = () => {
 
 
   })
+   const selectedCountry = countries.find((c: any) => c.value === formData.country);
 
+   // to handle change on the combo box 
+   const handleChange = ( key : keyof TripFormData , value : string | number) =>{
+    setFormData((prev) => ({...prev , [key]:value}))
+  }
 
   return (
     <div>
@@ -49,6 +56,10 @@ const AIStrategist = () => {
       ctaText="view Trip Archive"
       ctaUrl="/Home/archive"
      />
+
+
+
+
     </div>
   )
 }
