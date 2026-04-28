@@ -15,6 +15,8 @@ export const loader = async () => {
   
   if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
   
+
+  // converts the response to json format and then we can use it in our component
   const data = await res.json();
 
   // 2. Format the data once here. 
@@ -56,6 +58,7 @@ const CreateTrips = () => {
 
   // Watch for the action result to navigate or show errors
   useEffect(() => {
+    // if darta gotten from the ai response is ready...navigate to the trip details
     if (fetcher.data?.id) {
       navigate(`/trips/${fetcher.data.id}`);
     } else if (fetcher.data?.error) {
@@ -83,6 +86,7 @@ const CreateTrips = () => {
     setError(null)
 
     try {
+      // gets the current session
       const user = await account.get()
       
       if(!user.$id) {
@@ -99,7 +103,7 @@ const CreateTrips = () => {
           interests: formData.interest, // Mapping singular to plural for the action
           budget: formData.budget,
           groupType: formData.groupType,
-          userId: user.$id,
+          userId: user.$id, // userId was submitted in the action, now we get it from the session and pass it along with the form data
           email: user.email,
         name: user.name,
 
@@ -116,7 +120,7 @@ const CreateTrips = () => {
   const handleChange = ( key : keyof TripFormData , value : string | number) =>{
     setFormData((prev) => ({...prev , [key]:value}))
   }
-
+  // just for the map color shading or
   const mapData = [
     {
         country: selectedCountry ? selectedCountry.text.split(' ').slice(1).join(' ') : '',
