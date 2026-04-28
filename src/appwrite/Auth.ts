@@ -9,7 +9,8 @@ export const loginWithGoogle = async () => {
         // We define where the user goes after the Google pop-up finishes
         const successUrl = `${window.location.origin}/`; // Goes to your Dashboard
         const failureUrl = `${window.location.origin}/sign-in`; // Goes back to Sign-In if they cancel
-
+        // creates a new account  session
+        // which u can access with "account.get()" 
         await account.createOAuth2Session(
             OAuthProvider.Google,
             successUrl,
@@ -51,7 +52,8 @@ export const getUser = async () => {
                     "email", 
                     "imageUrl", 
                     "accountId", 
-                    "dateTime"
+                    "dateTime",
+                    
                    
                 ])
             ]
@@ -105,19 +107,23 @@ export const storeUserData = async () => {
     try {
         
         const user = await account.get();
-        const googlePhoto = user.prefs?.avatar || "";
+     const googlePhoto = await getGooglePicture();
         if (!user) return null;
 
         // Check if exists first
         const { documents } = await database.listDocuments(
+
             appwriteConfig.databaseId,
             appwriteConfig.userCollectionId,
             [Query.equal("accountId", user.$id)]
         );
 
+        // this is just the getuser() all over again 
+
         if (documents.length > 0) return documents[0];
 
         // Create new if doesn't exist
+        //ie there is no document 
         const newUser = await database.createDocument(
             appwriteConfig.databaseId,
             appwriteConfig.userCollectionId,
@@ -126,9 +132,8 @@ export const storeUserData = async () => {
                 accountId: user.$id,
                 name: user.name,
                 email: user.email,
-               
-                dateTime: new Date().toISOString(),
-                imageUrl: googlePhoto || `https://ui-avatars.com/api/?name=${user.name}&background=random`,
+               dateTime: new Date().toISOString(),
+              imageUrl: googlePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
 
             }
         );
@@ -185,3 +190,40 @@ export const getAllUser = async(limit : number , offset: number ) =>{
 
  }
 }
+
+
+
+
+// appwrite/Auth.ts or appwrite/Usage.ts
+
+export const incrementUserTripCount = async (accountId: string) => {
+  try {
+    // 1. Find the document where accountId matches
+    const { documents } = await database.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      [Query.equal("accountId", accountId)]
+    );
+
+    if (documents.length === 0) {
+      console.error("No user document found for this account ID");
+      return;
+    }
+
+    const userDoc = documents[0];
+
+    // 2. Update that specific document using its actual $id
+    await database.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      userDoc.$id, // This is the real Document ID
+      {
+        itineraryCreated: (userDoc.itineraryCreated || 0) + 1
+      }
+    );
+    
+    console.log("Trip count updated successfully!");
+  } catch (error) {
+    console.error("Failed to increment trip count:", error);
+  }
+};
