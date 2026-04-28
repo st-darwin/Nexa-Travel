@@ -273,6 +273,7 @@ useEffect(() => {
                     value : item,
                 }))}
                 change={(e: any) => {
+                  
                if (e.value) handleChange(key as keyof TripFormData, e.value);
                   }}
                    placeholder={`Select ${key}...`}
