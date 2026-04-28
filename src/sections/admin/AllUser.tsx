@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 import { GridComponent, ColumnsDirective, ColumnDirective } from "@syncfusion/ej2-react-grids";
 import { getAllUser } from '../../appwrite/Auth';
 import { useLoaderData } from 'react-router-dom';
-import { getALlTrips } from '../../appwrite/Trips';
+import { getALlTrips  } from '../../appwrite/Trips';
 
 export const loader = async () => {
   try {
