@@ -1,5 +1,6 @@
-  
+
 // ai planner 
+import { ComboBoxComponent } from "@syncfusion/ej2-react-dropdowns";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import UserHeader from "../../components/UserHeader"
 import { useState , useEffect } from "react";
@@ -29,7 +30,7 @@ export const loader = async () => {
 
 
 const AIStrategist = () => {
-  const countries = useLoaderData() as TripFormData[];
+  const countries = useLoaderData() as any[];
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,7 @@ const AIStrategist = () => {
 
 
   })
+    
    const selectedCountry = countries.find((c: any) => c.value === formData.country);
 
      useEffect(() => {
@@ -110,6 +112,13 @@ const AIStrategist = () => {
    const handleChange = ( key : keyof TripFormData , value : string | number) =>{
     setFormData((prev) => ({...prev , [key]:value}))
   }
+    const mapData = [
+    {
+        country: selectedCountry ? selectedCountry.text.split(' ').slice(1).join(' ') : '',
+        color : '#1E90FF',
+        coordinatess : selectedCountry?.coordinates || []
+    }
+  ]
 
   return (
     <div>
@@ -119,6 +128,48 @@ const AIStrategist = () => {
       ctaText="view Trip Archive"
       ctaUrl="/Home/archive"
      />
+
+     <section className="mt-4 wrapper-md">
+      <form className="trip-form" onSubmit={handleSubmit}>
+     
+                 {/* COMBO BOX  FOR COUNTRY*/}
+               <div className="flex flex-col gap-2">
+                 <label htmlFor="country" className="font-semibold text-slate-700">
+                   Country
+                 </label>
+                 <ComboBoxComponent
+                   id="country"
+                   dataSource={countries} 
+                   fields={{ text: 'text', value: 'value' }}
+                   placeholder='Select a country'
+                   className="combo-box"
+                   cssClass="e-soft-custom"
+                   change={(e : {value:string | undefined}) =>{
+                     if(e.value){
+                         handleChange('country' , e.value )
+                     }
+                   } }
+                    allowFiltering={true}
+                    filtering={(e) =>{
+                     const query = e.text.toLowerCase();
+                     e.updateData(
+                       // filter the coutries then matches with the query(in caps)then resturn the text and value of the matched country to be shown in the combo box
+                         countries.filter((country :any) => country?.text?.toLowerCase().includes(query)).map((country) =>({
+                             text: country.text,
+                             value: country.value,
+                         }))
+                     )
+                    }}
+                 />
+               </div>
+
+      </form>
+     </section>
+
+
+
+
+     
 
 
 
