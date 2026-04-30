@@ -71,7 +71,7 @@ export const UserSideBarItems =[
   // Inside your NavItems array
 {
   name: 'AI Travel Chat',
-  href: 'chatBot',
+  href: 'chatbot',
   label:"AI Travel Chat",
   icon: "/assets/icons/chatbot.svg"
   
@@ -157,7 +157,7 @@ export const selectItems = [
 ] as (keyof TripFormData)[];
 
 export const comboBoxItems = {
-  groupType: groupTypes,
+  groupType: groupTypes, // will contain there arrays
   travelStyle: travelStyles,
   interest: interests,
   budget: budgetOptions,
