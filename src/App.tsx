@@ -13,7 +13,7 @@ import UserLayout ,{ UserClientLoader} from "./sections/User/UserLayout";
 import Archive  , {loader as userArchiveloader} from "./sections/User/Archive";
 import Settings from "./sections/User/Settings";
 import MyItinerary   from "./sections/User/MyItinerary";
-import AIStrategist from "./sections/User/AIStrategist";
+import AIStrategist , {loader as StrategistLoader} from "./sections/User/AIStrategist";
 import Chatbot from "./sections/User/Chatbot";
 
 
@@ -42,7 +42,7 @@ const router = createBrowserRouter(
       {/* 2. USER SECTION (Specifically under /Home) */}
       <Route path="/Home" element={<UserLayout />} loader={UserClientLoader}>
         <Route index element={<UserDashboard />}  loader={UserDashboradLoader}/>
-          <Route path="strategist" element={<AIStrategist/>} />
+          <Route path="strategist" element={<AIStrategist/>} loader={StrategistLoader} />
         <Route path="archive" element={<Archive/>} loader={userArchiveloader} />
         <Route path="settings" element={<Settings />} />
         <Route path="my-itinerary" element={<MyItinerary />} />
