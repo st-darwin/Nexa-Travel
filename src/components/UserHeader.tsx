@@ -1,6 +1,6 @@
 import { cn } from '../lib/utils'
 import { Link, useLocation } from 'react-router-dom'
-import { Plus, Compass } from 'lucide-react'
+import { Plus, Compass, LucideCompass } from 'lucide-react'
 
 interface Props {
     title: string;
@@ -12,6 +12,7 @@ interface Props {
 const UserHeader = ({ title, description, ctaText, ctaUrl }: Props) => {
     const location = useLocation()
     const isHome = location.pathname ==="/Home"
+    const isAiStrategist = location.pathname === "/Home/strategist"
 
     return (
         <header className="relative flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12">
@@ -47,7 +48,7 @@ const UserHeader = ({ title, description, ctaText, ctaUrl }: Props) => {
                         
                         <div className="relative flex items-center gap-3">
                             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 transition-colors group-hover:bg-white/20">
-                                <Plus size={14} strokeWidth={3.5} className="text-white" />
+                                {isAiStrategist ? <LucideCompass size={14} strokeWidth={3.5} className="text-white" /> : <Plus size={14} strokeWidth={3.5} className="text-white" />} 
                             </div>
                             <span className="text-sm font-bold tracking-tight text-white">{ctaText}</span>
                         </div>
