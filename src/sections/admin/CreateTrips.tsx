@@ -9,6 +9,7 @@ import { account } from '../../appwrite/client'
 
 
 
+
 export const loader = async () => {
   // 1. Ask for ALL the fields you plan to use in your .map()
   const res = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,flag,latlng,maps');
@@ -224,6 +225,7 @@ useEffect(() => {
 
             {/* COMBO BOX */}
           <div className="flex flex-col gap-2">
+            
             <label htmlFor="country" className="font-semibold text-slate-700">
               Country
             </label>
@@ -243,6 +245,7 @@ useEffect(() => {
                filtering={(e) =>{
                 const query = e.text.toLowerCase();
                 e.updateData(
+                  // filter the coutries then matches with the query(in caps)then resturn the text and value of the matched country to be shown in the combo box
                     countries.filter((country :any) => country?.text?.toLowerCase().includes(query)).map((country) =>({
                         text: country.text,
                         value: country.value,
