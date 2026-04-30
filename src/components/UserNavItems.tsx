@@ -26,7 +26,7 @@ const UserNavitems = ({ handleClick }: { handleClick: () => void }) => {
         {/* Nav List - Improved interaction and weight */}
         <nav className="flex-1 space-y-1 px-1">
   {UserSideBarItems.map((item) => (
-    <NavLink to={item.href} key={item.id} onClick={handleClick}>
+    <NavLink to={item.href} key={item.label} onClick={handleClick}>
       {({ isActive }) => (
         <div className={cn(
           "group flex items-center gap-3.5 px-4 my-4 py-3 rounded-2xl transition-all duration-300",
