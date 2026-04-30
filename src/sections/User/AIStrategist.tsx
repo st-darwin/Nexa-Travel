@@ -32,7 +32,9 @@ export const loader = async () => {
 
 const AIStrategist = () => {
   const countries = useLoaderData() as any[];
+  
   const navigate = useNavigate();
+  const loading = useFetcher().state === "submitting";
   const fetcher = useFetcher();
   const [error, setError] = useState<string | null>(null);
   const [formData , setFormData] = useState({
@@ -123,6 +125,9 @@ const AIStrategist = () => {
   ]
 
   return (
+    <main className="min-h-screen bg-slate-50">
+
+    
     <div>
      <UserHeader
      title="Personalized AI Strategist"
@@ -258,6 +263,7 @@ const AIStrategist = () => {
 
 
     </div>
+    </main>
   )
 }
 
