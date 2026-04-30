@@ -1,6 +1,5 @@
 
 // ai planner 
-/// Just a repeat from the admin 
 import { ComboBoxComponent } from "@syncfusion/ej2-react-dropdowns";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import UserHeader from "../../components/UserHeader"
@@ -110,6 +109,7 @@ const AIStrategist = () => {
   }
 
    // to handle change on the combo box 
+   // update the the value of the form data 
    const handleChange = ( key : keyof TripFormData , value : string | number) =>{
     setFormData((prev) => ({...prev , [key]:value}))
   }
@@ -130,11 +130,12 @@ const AIStrategist = () => {
       ctaUrl="/Home/archive"
      />
 
-     <section className="mt-4 wrapper-md">
+     <section className="mt-4 xl:mt-10 wrapper-md">
       <form className="trip-form" onSubmit={handleSubmit}>
      
                  {/* COMBO BOX  FOR COUNTRY*/}
                <div className="flex flex-col gap-2">
+               
                  <label htmlFor="country" className="font-semibold text-slate-700">
                    Country
                  </label>
@@ -154,14 +155,26 @@ const AIStrategist = () => {
                     filtering={(e) =>{
                      const query = e.text.toLowerCase();
                      e.updateData(
-                       // filter the coutries then matches with the query(in caps)then resturn the text and value of the matched country to be shown in the combo box
-                         countries.filter((country :any) => country?.text?.toLowerCase().includes(query)).map((country) =>({
-                             text: country.text,
-                             value: country.value,
-                         }))
+                       // filter the coutries then matches with the query(in smalls lettes )then return the text and value of the matched country to be shown in the combo box
+                      countries.filter((c: any) => c.text.toLowerCase().includes(query)).map((c: any) => ({ text: c.text, value: c.value }))
                      )
                     }}
                  />
+               </div>
+                {/*Duration */}
+               <div>
+                    <label htmlFor="duration" className="font-semibold text-slate-700">
+                   Duration
+                 </label>
+                 <input
+                   id="duration"
+                   name="duration"
+                   className="form-input placeholder:text-gray-100"
+                   onChange={(e) => handleChange("duration", Number(e.target.value))}
+                   type="number"
+                   placeholder='Enter the number of days...'
+                 />
+
                </div>
 
       </form>
