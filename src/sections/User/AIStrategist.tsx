@@ -6,6 +6,7 @@ import UserHeader from "../../components/UserHeader"
 import { useState , useEffect } from "react";
 import { useFetcher } from "react-router-dom";
 import { account } from "../../appwrite/client";
+import { comboBoxItems , selectItems } from "../../constants";
 export const loader = async () => {
   // 1. Ask for ALL the fields you plan to use in your .map()
   const res = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,flag,latlng,maps');
@@ -176,6 +177,74 @@ const AIStrategist = () => {
                  />
 
                </div>
+
+               {/* Other fields */}
+
+               {selectItems.map((items) => (
+                   <div className="my-2" key={items}>
+
+                    <label htmlFor={items}>{items}</label>
+                    <ComboBoxComponent
+                    id={items}
+                    className="combo-box"
+                       placeholder= {` select ${items}...`}
+
+                    dataSource={comboBoxItems[items].map((item) => ({
+                      text : item,
+                      value: item,
+                    })
+              
+
+                  
+                  )}
+                   change={(e) => {
+                  
+               if (e.value) handleChange(items as keyof TripFormData, e.value);
+                  }}
+                 
+                    
+
+                    />
+                   </div>
+               ))}
+
+               {/* Error handling and messages */}
+               
+              {error && (
+  <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm">
+    <div className="bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] rounded-xl px-4 py-3 flex items-center justify-between">
+      
+      <div className="flex items-center gap-3">
+        {/* Minimalist dot indicator instead of a big icon */}
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+        </span>
+        
+        <p className="text-[13px] font-medium text-slate-600 tracking-tight">
+          {error}
+        </p>
+      </div>
+
+      <button 
+        onClick={() => setError(null)}
+        className="group p-2 hover:bg-slate-100 rounded-full transition-all duration-200"
+      >
+        <svg 
+          className="w-4 h-4 text-slate-400 group-hover:text-slate-600" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+              )}
+           
+
+
 
       </form>
      </section>
