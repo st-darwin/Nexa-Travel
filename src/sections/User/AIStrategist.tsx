@@ -1,10 +1,10 @@
   
 // ai planner 
-// still cooking tho 
-
-import { useLoaderData } from "react-router-dom";
+import { useLoaderData, useNavigate } from "react-router-dom";
 import UserHeader from "../../components/UserHeader"
-import { useState } from "react";
+import { useState , useEffect } from "react";
+import { useFetcher } from "react-router-dom";
+import { account } from "../../appwrite/client";
 export const loader = async () => {
   // 1. Ask for ALL the fields you plan to use in your .map()
   const res = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,flag,latlng,maps');
@@ -30,18 +30,81 @@ export const loader = async () => {
 
 const AIStrategist = () => {
   const countries = useLoaderData() as TripFormData[];
+  const navigate = useNavigate();
+  const fetcher = useFetcher();
+  const [error, setError] = useState<string | null>(null);
   const [formData , setFormData] = useState({
      country: "",
     travelStyle: "",
     interest: "",
     budget: "",
-    duration: "",
+    duration: 0,
     groupType: "",
    // initial form data state, can be empty or have default values
 
 
   })
    const selectedCountry = countries.find((c: any) => c.value === formData.country);
+
+     useEffect(() => {
+       // if darta gotten from the ai response is ready...navigate to the trip details
+       if (fetcher.data?.id) {
+         navigate(`/trips/${fetcher.data.id}`);
+       } else if (fetcher.data?.error) {
+         setError(fetcher.data.error);
+       }
+     }, [fetcher.data, navigate]);
+
+      const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if(
+      !formData.country || !formData.budget ||
+       !formData.duration || !formData.groupType ||
+       !formData.interest|| !formData.travelStyle
+    ){ 
+      setError("Please the provide the values of all fields..")
+      return; 
+    }
+
+    if(formData.duration < 1 || formData.duration > 10 ){
+      setError("Duration must be between 1 - 10 days ! ")
+      return ;
+    } 
+    
+    setError(null)
+
+    try {
+      // gets the current session
+      const user = await account.get()
+      
+      if(!user.$id) {
+        setError("This user is not authenticated")
+        return;
+      }
+
+      // Submit to the Route Action instead of manual fetch
+      fetcher.submit(
+        {
+          country: formData.country,
+          numberOfDays: formData.duration,
+          travelStyle: formData.travelStyle,
+          interests: formData.interest, // Mapping singular to plural for the action
+          budget: formData.budget,
+          groupType: formData.groupType,
+          userId: user.$id, // userId was submitted in the action, now we get it from the session and pass it along with the form data
+          email: user.email,
+        name: user.name,
+
+        },
+        { method: "post", encType: "application/json" }
+      );
+
+    } catch(err) {
+      console.log("Auth error :" , err)
+      setError("Authentication failed. Please log in again.")
+    }
+  }
 
    // to handle change on the combo box 
    const handleChange = ( key : keyof TripFormData , value : string | number) =>{
