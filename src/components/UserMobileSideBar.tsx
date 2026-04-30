@@ -50,7 +50,7 @@ const handleLogout = async () => {
             const isActive = pathname === item.href;
             return (
               <Link 
-                key={item.id} 
+                key={item.label} 
                 to={item.href} 
                 className={cn(
                   "relative flex items-center justify-center size-12 rounded-2xl transition-all duration-500",
@@ -95,7 +95,7 @@ const handleLogout = async () => {
             
             {remainingItems.map((item) => (
               <Link
-                key={item.id}
+                key={item.label}
                 to={item.href}
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-between py-4 group active:scale-95 transition-transform"
