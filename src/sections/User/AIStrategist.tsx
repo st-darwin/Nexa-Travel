@@ -6,7 +6,10 @@ import UserHeader from "../../components/UserHeader"
 import { useState , useEffect } from "react";
 import { useFetcher } from "react-router-dom";
 import { account } from "../../appwrite/client";
+import { world_map } from "../../constants/world_map";
 import { comboBoxItems , selectItems } from "../../constants";
+import { MapsComponent , LayerDirective , LayersDirective } from "@syncfusion/ej2-react-maps";
+
 export const loader = async () => {
   // 1. Ask for ALL the fields you plan to use in your .map()
   const res = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,flag,latlng,maps');
@@ -212,6 +215,93 @@ const AIStrategist = () => {
                     />
                    </div>
                ))}
+
+
+
+                           {/* LOCATION */}
+               <div className="relative w-full max-w-5xl mx-auto group px-4 sm:px-0">
+                 {/* The "Glow" - Ambient mesh gradient behind the card */}
+                 <div className="absolute -inset-1 bg-gradient-to-r from-indigo-100/40 via-purple-50/30 to-blue-100/40 blur-3xl rounded-[3rem] opacity-60 pointer-events-none" />
+               
+                 {/* Main Outer Container */}
+                 <div className="relative p-1.5 sm:p-2 rounded-[32px] sm:rounded-[40px] bg-white/60 backdrop-blur-2xl border border-white/80 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.03)] transition-all duration-500 hover:shadow-[0_20px_80px_-20px_rgba(0,0,0,0.08)]">
+                   
+                   <div className="bg-white rounded-[26px] sm:rounded-[34px] p-5 sm:p-10 shadow-[0_1px_3px_rgba(0,0,0,0.02)] border border-slate-50">
+                     
+                     {/* Header Section - Mobile Optimized */}
+                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8 sm:mb-12">
+                       <div className="space-y-2">
+                         <div className="flex items-center gap-2">
+                           <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-[10px] font-bold text-indigo-500 uppercase tracking-[0.15em]">System Live</span>
+                           <span className="text-[10px] font-medium text-slate-300 uppercase tracking-widest">• Global v5.0 </span>
+                         </div>
+                         <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+                           Network <span className="text-slate-400 font-light ">Core</span>
+                         </h2>
+                       </div>
+                       
+                       {/* Status Badge */}
+                       <div className="flex items-center self-start sm:self-center gap-3 px-4 py-2 bg-slate-50/80 border border-slate-100/50 rounded-2xl">
+                        
+                         <span className="text-xs font-semibold text-slate-600 tracking-wide">99.9% Uptime</span>
+                       </div>
+                     </div>
+               
+                     {/* Map Stage - Deep Inset Softness */}
+                     <div className="relative p-2 sm:p-3 bg-slate-50/50 rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)]">
+                       <div className="overflow-hidden bg-white border border-slate-200/50 rounded-[18px] sm:rounded-[24px] shadow-sm">
+                         <MapsComponent 
+                           background="transparent" 
+                           margin={{ bottom: 0, left: 0, right: 0, top: 0 }}
+                           className="w-full h-[250px] sm:h-[450px]" // Responsive height
+                         >
+                           <LayersDirective>
+                             <LayerDirective
+                               dataSource={mapData}
+                               shapeDataPath='country'
+                               shapePropertyPath='name'
+                               shapeSettings={{ 
+                                 colorValuePath : 'color',
+                                 fill: '#F8FAFC', 
+                                 border: { color: '#E2E8F0', width: 1 } 
+                               }}
+                               shapeData={world_map} 
+                             />
+                           </LayersDirective>
+                         </MapsComponent>
+                       </div>
+               
+                       {/* Decorative corner highlights */}
+                       <div className="absolute top-6 left-6 w-8 h-8 border-t-[1.5px] border-l-[1.5px] border-slate-200/60 rounded-tl-xl pointer-events-none" />
+                       <div className="absolute bottom-6 right-6 w-8 h-8 border-b-[1.5px] border-r-[1.5px] border-slate-200/60 rounded-br-xl pointer-events-none" />
+                     </div>
+               
+                     {/* Footer Stats - Grid System for Mobile */}
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-12 mt-10 px-2">
+                       {[
+                         { label: 'Active Regions', val: '124', unit: 'Loc' },
+                         { label: 'Latency Avg', val: '24', unit: 'ms' },
+                         { label: 'Node Count', val: '8.4', unit: 'k' },
+                         { label: 'Throughput', val: '1.2', unit: 'gb/s' }
+                       ].map((stat, i) => (
+                         <div key={i} className="flex flex-col gap-1 group/stat cursor-default">
+                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest transition-colors group-hover/stat:text-indigo-400">
+                             {stat.label}
+                           </span>
+                           <div className="flex items-baseline gap-1">
+                             <span className="text-xl sm:text-2xl font-semibold text-slate-800 font-mono tracking-tighter">
+                               {stat.val}
+                             </span>
+                             <span className="text-[10px] font-black text-slate-300 uppercase">
+                               {stat.unit}
+                             </span>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 </div>
+               </div>
 
                {/* Error handling and messages */}
                
