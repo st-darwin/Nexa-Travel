@@ -4,6 +4,7 @@ import { ComboBoxComponent } from "@syncfusion/ej2-react-dropdowns";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import UserHeader from "../../components/UserHeader"
 import { useState , useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { useFetcher } from "react-router-dom";
 import { account } from "../../appwrite/client";
 import { world_map } from "../../constants/world_map";
@@ -337,21 +338,38 @@ const AIStrategist = () => {
     </div>
   </div>
               )}
-           
 
+              {/* CTA Button */}
+<div className="mt-8 mb-12">
+  <button
+    type="submit"
+    disabled={loading}
+    className="group cursor-pointer relative hover:scale-[1.01] duration-300 w-full overflow-hidden rounded-2xl bg-[#0a0a0a] py-4 px-8 transition-all duration-300 active:scale-[0.98] disabled:opacity-80 disabled:cursor-not-allowed shadow-[0_20px_50px_rgba(0,0,0,0.15)]"
+  >
+    {/* Subtle Inner Glow */}
+    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    
+    {/* Sleek Glass Border */}
+    <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-colors" />
 
-
+    <div className="relative flex items-center justify-center gap-3">
+      {loading ? (
+        <>
+          <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
+          <span className="text-[13px] font-bold tracking-[0.25em] text-indigo-100 uppercase animate-pulse">
+            Synthesizing
+          </span>
+        </>
+      ) : (
+        <span className="text-[13px] font-bold tracking-[0.1em] text-white  transition-all duration-500 ease-out uppercase">
+          Generate Trip Itinerary
+        </span>
+      )}
+    </div>
+  </button>
+</div>
       </form>
      </section>
-
-
-
-
-     
-
-
-
-
     </div>
     </main>
   )
