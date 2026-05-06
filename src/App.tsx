@@ -15,6 +15,7 @@ import Settings from "./sections/User/Settings";
 import MyItinerary   from "./sections/User/MyItinerary";
 import AIStrategist , {loader as StrategistLoader} from "./sections/User/AIStrategist";
 import Chatbot from "./sections/User/Chatbot";
+import UserTripsDetails  from "./sections/User/UserTripsDetails";
 
 
 const router = createBrowserRouter(
@@ -42,12 +43,19 @@ const router = createBrowserRouter(
       {/* 2. USER SECTION (Specifically under /Home) */}
       <Route path="/Home" element={<UserLayout />} loader={UserClientLoader}>
         <Route index element={<UserDashboard />}  loader={UserDashboradLoader}/>
-          <Route path="strategist" element={<AIStrategist/>} loader={StrategistLoader} />
+          <Route path="strategist" element={<AIStrategist/>} 
+          loader={StrategistLoader}
+           action={createTripAction} 
+          />
         <Route path="archive" element={<Archive/>} loader={userArchiveloader} />
         <Route path="settings" element={<Settings />} />
         <Route path="my-itinerary" element={<MyItinerary />} />
         <Route path="chatbot" element={<Chatbot />} />
+        <Route path="UserTrips/:id" element={<UserTripsDetails/>}  />
+
       </Route>
+
+      
 
       {/* 3. PUBLIC */}
       <Route path="/sign-in" element={<SignIn />} loader={signInLoader} />
