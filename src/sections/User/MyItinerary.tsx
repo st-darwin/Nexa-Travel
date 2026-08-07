@@ -53,6 +53,8 @@ const MyItinerary = () => {
   // 1. Core Data Evaluation
   const tripData = useMemo(() => parseTripData(rawData.trip), [rawData.trip]);
 
+  const bookingId = tripData?.bookingId || null;
+
   // 2. State & Status Tracking
   const [showPopup, setShowPopup] = useState(tripData?.status !== 'finalized');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -154,6 +156,12 @@ const MyItinerary = () => {
     }
   };
 
+  const handleViewTicket = () => {
+    setShowOverlayModal(false);
+  const targetId = bookingId || rawData.id;
+  navigate(`/booking-success/${targetId}`);
+  };
+
   const handleDeleteTrip = async () => {
     if (!confirm("Are you sure you want to delete this trip?")) return;
     setActionLoading(true);
@@ -233,85 +241,97 @@ const MyItinerary = () => {
       </div>
 
       {/* SOFT SAAS OVERLAY MODAL */}
-      {showOverlayModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-white border border-slate-200/80 rounded-2xl shadow-xl p-6 relative space-y-6">
-            
-            {/* Minimal Header */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                  Status: Finalized
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowOverlayModal(false)}
-                  className="text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <h3 className="text-base font-bold text-slate-900 tracking-tight pt-1">
-                Trip Options
-              </h3>
-              <p className="text-xs text-slate-500 font-normal leading-relaxed">
-                This itinerary has already been finalized and processed in your account.
-              </p>
-            </div>
-
-            {/* Clean Action List */}
-            <div className="space-y-2 pt-1">
-              
-              {/* Primary: Book Again */}
-              <button
-                type="button"
-                onClick={handleBookAgain}
-                disabled={actionLoading}
-                className="w-full px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs flex items-center justify-between transition-all shadow-xs cursor-pointer disabled:opacity-50"
-              >
-                <span>Book Again</span>
-                <span className="text-slate-400 text-xs">→</span>
-              </button>
-
-              {/* Secondary: Delete Booking */}
-              <button
-                type="button"
-                onClick={handleDeleteBooking}
-                disabled={actionLoading}
-                className="w-full px-4 py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-medium text-xs flex items-center justify-between transition-all cursor-pointer disabled:opacity-50"
-              >
-                <span>Delete Booking</span>
-                <span className="text-slate-400 text-xs">→</span>
-              </button>
-
-              {/* Muted Danger: Delete Trip */}
-              <button
-                type="button"
-                onClick={handleDeleteTrip}
-                disabled={actionLoading}
-                className="w-full px-4 py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/60 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center justify-between transition-all cursor-pointer disabled:opacity-50"
-              >
-                <span>Delete Trip</span>
-                <span className="text-slate-400 text-xs">→</span>
-              </button>
-            </div>
-
-            {/* Footer Dismiss */}
-            <div className="pt-1 text-center">
-              <button
-                type="button"
-                onClick={() => setShowOverlayModal(false)}
-                className="text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
+   {/* SOFT SAAS OVERLAY MODAL */}
+{showOverlayModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="w-full max-w-sm bg-white border border-slate-200/80 rounded-2xl shadow-xl p-6 relative space-y-6">
+      
+      {/* Minimal Header */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+            Status: Finalized
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowOverlayModal(false)}
+            className="text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-      )}
+
+        <h3 className="text-base font-bold text-slate-900 tracking-tight pt-1">
+          Trip Options
+        </h3>
+        <p className="text-xs text-slate-500 font-normal leading-relaxed">
+          This itinerary has already been finalized and processed in your account.
+        </p>
+      </div>
+
+      {/* Clean Action List */}
+      <div className="space-y-2 pt-1">
+        
+        {/* Primary: View Ticket */}
+        <button
+          type="button"
+          onClick={handleViewTicket}
+          disabled={actionLoading}
+          className="w-full px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs flex items-center justify-between transition-all shadow-xs cursor-pointer disabled:opacity-50"
+        >
+          <span>View Ticket</span>
+          <span className="text-slate-400 text-xs">→</span>
+        </button>
+
+        {/* Secondary: Book Again */}
+        <button
+          type="button"
+          onClick={handleBookAgain}
+          disabled={actionLoading}
+          className="w-full px-4 py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-medium text-xs flex items-center justify-between transition-all cursor-pointer disabled:opacity-50"
+        >
+          <span>Book Again</span>
+          <span className="text-slate-400 text-xs">→</span>
+        </button>
+
+        {/* Delete Booking */}
+        <button
+          type="button"
+          onClick={handleDeleteBooking}
+          disabled={actionLoading}
+          className="w-full px-4 py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-medium text-xs flex items-center justify-between transition-all cursor-pointer disabled:opacity-50"
+        >
+          <span>Delete Booking</span>
+          <span className="text-slate-400 text-xs">→</span>
+        </button>
+
+        {/* Delete Trip */}
+        <button
+          type="button"
+          onClick={handleDeleteTrip}
+          disabled={actionLoading}
+          className="w-full px-4 py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/60 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center justify-between transition-all cursor-pointer disabled:opacity-50"
+        >
+          <span>Delete Trip</span>
+          <span className="text-slate-400 text-xs">→</span>
+        </button>
+      </div>
+
+      {/* Footer Dismiss */}
+      <div className="pt-1 text-center">
+        <button
+          type="button"
+          onClick={() => setShowOverlayModal(false)}
+          className="text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Main Layout Interface */}
       <main className='travel-detail wrapper bg-[#F9FAFB] min-h-screen text-slate-800 selection:bg-blue-100'>

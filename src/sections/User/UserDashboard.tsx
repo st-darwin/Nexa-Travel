@@ -21,6 +21,7 @@ export interface DashboardTrip {
   isBooked: boolean;
   bookingId: string;
   createdAt: string;
+  paymentAmount: number | null;
 }
 
 export interface DashboardLoaderData {
@@ -69,6 +70,8 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
         estimatedPrice: parsed?.estimatedPrice || raw.paymentAmount,
         tags: normalizedTags,
         isBooked,
+       paymentAmount : raw.paymentAmount || null,
+        
         bookingId: raw.BookingID || raw.$id,
         createdAt: raw.$createdAt,
       };
@@ -282,7 +285,7 @@ const UserDashboard = () => {
                   </span>
                   <span className="text-xl font-bold text-white tracking-tight">
                     {data.currentBookedTrip.estimatedPrice
-                      ? `$${data.currentBookedTrip.estimatedPrice}`
+                      ? `$${Number(data.currentBookedTrip.paymentAmount).toFixed(2)}`
                       : "Paid"}
                   </span>
                 </div>

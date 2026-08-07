@@ -254,7 +254,7 @@ useEffect(() => {
             </p>
           </div>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/Home')}
             className="w-full py-3.5 bg-zinc-900 text-white font-mono text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-zinc-800 active:scale-[0.99] transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
           >
             <svg
