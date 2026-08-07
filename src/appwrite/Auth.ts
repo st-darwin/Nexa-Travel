@@ -4,14 +4,9 @@ import { database } from "./client";
 
 export const loginWithGoogle = async () => {
   try {
-    // ✅ Dynamically incorporates standard origin AND the repo subpath (/Nexa-Travel/)
-    const baseUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
-    
-    // Strips double slashes if present
-    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-
-    const successUrl = cleanBaseUrl; // Routes back to https://st-darwin.github.io/Nexa-Travel/
-    const failureUrl = `${cleanBaseUrl}sign-in`; // Routes to https://st-darwin.github.io/Nexa-Travel/sign-in
+    // Clean default URLs:
+    const successUrl = `${window.location.origin}/`;
+    const failureUrl = `${window.location.origin}/sign-in`;
 
     await account.createOAuth2Session(
       OAuthProvider.Google,
