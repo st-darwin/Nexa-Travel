@@ -70,7 +70,7 @@ const Dashboard = () => {
   if(loading && !data){
     return <StatsSkeleton />
   }
- const {user, dashboardStats , allTrips , userGrowth , tripsByTravelStyle , mappedUsers } = data 
+ const {user, dashboardStats , allTrips , userGrowth , tripsByTravelStyle  } = data 
   return (
 
 

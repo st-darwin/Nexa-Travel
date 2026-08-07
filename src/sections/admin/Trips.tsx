@@ -49,7 +49,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 const Trips = () => {
     const {allTrips , total} = useLoaderData() as { allTrips : any , total : number }
-       const handleSubmit = async() =>{}
+    
        const [searchParams] = useSearchParams()
        const initialPage= Number(searchParams.get('page' )|| '1') 
 

@@ -309,7 +309,7 @@ export const TelemetrySummary = () => {
             <MapsComponent 
               id="maps" 
               centerPosition={{ latitude: (currentLoc.lat + destLoc.lat) / 2, longitude: (currentLoc.lng + destLoc.lng) / 2 }} 
-              zoomSettings={{ enable: true, zoomFactor: 6, shouldZoomToSelection: true }}
+              zoomSettings={{ enable: true, zoomFactor: 6 }}
             >
               <Inject services={[Marker, NavigationLine, Zoom]} />
               <LayersDirective>

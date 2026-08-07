@@ -1,4 +1,3 @@
-import React from 'react';
 import Header from '../../components/Header';
 import { cn } from '../../lib/utils';
 import { GridComponent, ColumnsDirective, ColumnDirective } from "@syncfusion/ej2-react-grids";
