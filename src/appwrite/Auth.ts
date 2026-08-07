@@ -25,11 +25,14 @@ export const loginWithGoogle = async () => {
 
 export const logoutUser = async () => {
   try {
+    // 1. Delete the current Appwrite session
     await account.deleteSession("current");
-    
-    // ✅ Navigate back to sign-in page respecting base path
+
+    // 2. Build the full, clean sign-in path
     const baseUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+
+    // 3. Redirect directly to /Nexa-Travel/sign-in
     window.location.href = `${cleanBaseUrl}sign-in`;
     
     return true;
