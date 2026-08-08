@@ -10,6 +10,7 @@ import { getUserTrips } from "../../appwrite/Trips";
 import { parseTripData } from "../../lib/utils";
 import {AIBookingRateCard} from "./AIBookingRateCard";
 import { TripWeather } from "../../components/TripWeather";
+import WeatherRecommendations from "../../components/WeatherRecommendations";
 
 export interface DashboardTrip {
   id: string;
@@ -39,6 +40,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
   const url = new URL(request.url);
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
   const offset = (page - 1) * limit;
+
 
   try {
     const user = await account.get();
@@ -107,6 +109,12 @@ const UserDashboard = () => {
   const data = useLoaderData() as DashboardLoaderData;
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
+  
+  const sampleDestinations = [
+  { id: "1", name: "Santorini", country: "Greece", temp: 26, condition: "Sunny & Clear", tag: "Beach & Views" },
+  { id: "2", name: "Positano", country: "Italy", temp: 24, condition: "Mainly Clear", tag: "Coastal Walk" },
+  { id: "3", name: "Kyoto", country: "Japan", temp: 22, condition: "Clear Sky", tag: "Outdoor Culture" },
+];
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > data.totalPages) return;
@@ -123,6 +131,8 @@ const UserDashboard = () => {
         title={data.user ? `Welcome back, ${data.user} 👋` : "Welcome Guest 👋"}
         description="Your world, organized and synchronized in real-time."
       />
+
+      
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -193,6 +203,7 @@ const UserDashboard = () => {
           </div>
         </div>
       </div>
+      <WeatherRecommendations recommendations={sampleDestinations} />
 
       {/* AI Booking Rate Card */}
       <AIBookingRateCard />
