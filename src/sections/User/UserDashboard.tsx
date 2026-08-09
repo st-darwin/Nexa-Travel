@@ -11,7 +11,7 @@ import { parseTripData } from "../../lib/utils";
 import { AIBookingRateCard } from "./AIBookingRateCard";
 import { TripWeather } from "../../components/TripWeather";
 import WeatherRecommendations from "../../components/WeatherRecommendations";
-
+import { GetRecommendedTrips } from "../../appwrite/recommendationsBooking";
 export interface DashboardTrip {
   id: string;
   name: string;
@@ -33,6 +33,7 @@ export interface DashboardLoaderData {
   currentBookedTrip: DashboardTrip | null;
   currentPage: number;
   totalPages: number;
+  recdoc: any | null; // Add this line to include recommended trips data
 }
 
 export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Promise<DashboardLoaderData> => {
@@ -46,6 +47,12 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
     
     // Fetch paginated trips alongside total user stats
     const { trips, total } = await getUserTrips(user.$id, limit, offset);
+    const recdoc = await GetRecommendedTrips(user.$id, limit, offset); // fetch all recommended trips
+
+    // fetch all recommended trips 
+
+    
+
 
     const mappedTrips: DashboardTrip[] = trips.map((raw: Record<string, any>) => {
       const parsed = parseTripData(raw);
@@ -100,6 +107,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       allTrips: mappedTrips,
       currentPage: page,
       totalPages,
+      recdoc: recdoc || null, // Include recommended trips data
     };
   } catch (error) {
     console.error("Nexa OS Loader Error:", error);
@@ -111,6 +119,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       currentBookedTrip: null,
       currentPage: 1,
       totalPages: 1,
+      recdoc: null, // Ensure recommended trips data is null on error
     };
   }
 };
@@ -298,12 +307,83 @@ const UserDashboard = () => {
 
       {/* Active Weather forecast */}
       <TripWeather destinationCity={data.currentBookedTrip?.location || ''} />
+    
+    {/* Recent Recommendation Booking Card */}
+{data.recdoc && (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between">
+      <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400">
+        Recent Recommendation Booking
+      </h3>
+      <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+        Curated Spot
+      </span>
+    </div>
+
+    <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 bg-zinc-100 rounded-xl overflow-hidden flex-shrink-0">
+          <img 
+            src={data.recdoc.imgUrl || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80"} 
+            alt={data.recdoc.name || "Destination"} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+              {data.recdoc.paymentStatus || "Booked"}
+            </span>
+            <span className="text-[10px] font-mono text-zinc-400">
+              ID: #{data.recdoc.bookingID ? data.recdoc.bookingID.slice(-6).toUpperCase() : data.recdoc.$id.slice(-6).toUpperCase()}
+            </span>
+          </div>
+          <h4 className="font-semibold text-zinc-900 text-base">
+            {data.recdoc.name || data.recdoc.destination || "Recommended Destination"}
+          </h4>
+          <p className="text-xs text-zinc-500 font-mono">
+            {data.recdoc.country || data.recdoc.location || "Curated Experience"}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 pt-4 md:pt-0 border-zinc-100">
+        <div className="text-left md:text-right font-mono">
+          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block">
+            Amount Paid
+          </span>
+          <span className="text-sm font-bold text-zinc-900">
+            ${Number(data.recdoc.amount || data.recdoc.price || 0).toFixed(2)}
+          </span>
+        </div>
+
+        <button
+          onClick={() =>
+            navigate(
+              `/booking-success/${
+                data.recdoc.bookingID ||
+                data.recdoc.$id
+              }`
+            )
+          }
+          className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+        >
+          <span>View Ticket</span>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Recent Trips Feed */}
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between border-b border-zinc-200/60 pb-3">
           <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400">
-            Recent Trips
+            Recent custom Trips
           </h3>
           <button
             onClick={() => navigate("strategist")}

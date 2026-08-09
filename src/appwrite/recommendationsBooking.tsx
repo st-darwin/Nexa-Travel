@@ -1,5 +1,6 @@
-import { ID } from 'appwrite';
-import { database, appwriteConfig } from './client';
+import { ID, Query } from 'appwrite';
+import { database , appwriteConfig } from './client';
+
 
 export interface RecommendationBookingData {
   userID: string;
@@ -50,3 +51,27 @@ export const createRecommendationBooking = async (bookingData: RecommendationBoo
     throw error;
   }
 };
+
+export const GetRecommendedTrips = async(userID: string, limit: number, offset: number) => {
+
+
+  const docResponse = await database.listDocuments(
+    appwriteConfig.databaseId,
+    appwriteConfig.recommendationCollectionId,
+    [
+      Query.equal('userID', userID),
+      Query.limit(limit),
+      Query.offset(offset)
+    ]
+  );
+  if (!docResponse || !docResponse.documents) {
+    throw new Error('No recommended trips found for the user.');
+  }
+  if (docResponse.documents.length === 0) {
+    throw new Error('No recommended trips found for the user.');
+  }
+ const  doc = docResponse.documents[0];
+
+
+  return doc;
+}
