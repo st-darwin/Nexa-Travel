@@ -1,15 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { account, functions, appwriteConfig, database } from '../../appwrite/client';
-import { 
-  getUserTripById, 
-  storePaymentAmount, 
-  confirmPaymentStatus, 
-  confirmBookingStatus, 
-  storePaymentReference, 
-  StoreBookingid 
-} from '../../appwrite/Trips';
+import { getUserTripById } from '../../appwrite/Trips';
+import { createRecommendationBooking } from '../../appwrite/recommendationsBooking';
 import { parseTripData } from '../../lib/utils';
+import { BROWSE_RECOMMENDATIONS } from '../../constants/recommendations';
 
 declare global {
   interface Window {
@@ -26,6 +21,7 @@ interface BookingState {
   flightCost: number;
   platformFee: number;
   totalPrice: number;
+  preloadedTrip?: any;
 }
 
 type TransportMode = 'flight' | 'taxi';
@@ -85,6 +81,7 @@ export const TripBooking: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [isFetchingFlight, setIsFetchingFlight] = useState<boolean>(false);
   const [liveFlight, setLiveFlight] = useState<LiveFlightPayload | null>(null);
+  const [isPreloaded, setIsPreloaded] = useState<boolean>(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -101,88 +98,117 @@ export const TripBooking: React.FC = () => {
   });
 
   // Load Route/Ecosystem Context
-  useEffect(() => {
-    let isMounted = true;
+// 1. STRICT DETECTION IN useEffect
+useEffect(() => {
+  let isMounted = true;
 
-    const fetchEcosystemData = async () => {
+  const fetchEcosystemData = async () => {
+    try {
+      let activeUser = null;
       try {
-        const activeUser = await account.get();
-        if (id && activeUser.$id) {
-          const tripDocument = await getUserTripById(id, activeUser.$id);
-          const parsedTrip = parseTripData(tripDocument);
-
-          const geo = await fetch('https://api.db-ip.com/v2/free/self')
-            .then((r) => r.json())
-            .catch(() => ({ city: 'Lagos', countryCode: 'NG' }));
-
-          const sanitizedCity = geo.countryCode === 'MU' ? 'Lagos' : geo.city || 'Lagos';
-          const sanitizedCountry = geo.countryCode === 'MU' ? 'NG' : geo.countryCode || 'NG';
-
-          if (isMounted) {
-            setFormData((prev) => ({
-              ...prev,
-              fullName: prev.fullName || activeUser.name || '',
-              email: prev.email || activeUser.email || '',
-              destination: parsedTrip.location?.city || parsedTrip.destination || 'Location unknown',
-              origin: prev.origin !== 'Detecting Position...' ? prev.origin : `${sanitizedCity}, ${sanitizedCountry}`,
-            }));
-          }
-        }
-      } catch (error) {
-        console.error('Data ingestion breakdown:', error);
-      } finally {
-        if (isMounted) setIsLoadingData(false);
+        activeUser = await account.get();
+      } catch {
+        // Unauthenticated or guest fallback
       }
-    };
 
-    fetchEcosystemData();
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
+      let parsedTrip: any = null;
 
-  // Helper to get tomorrow's date string in YYYY-MM-DD format
-const getTomorrowDateString = () => {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toISOString().split('T')[0];
-};
+      // Check if this is EXPLICITLY a Browse Recommendation item
+      const isStaticBrowseRec = BROWSE_RECOMMENDATIONS.some((rec) => rec.id === id);
 
-const fetchFlightQuote = useCallback(async () => {
-  setIsFetchingFlight(true);
-  try {
-    const sanitizedOrigin = convertToIATA(formData.origin, 'LOS');
-    const sanitizedDestination = convertToIATA(formData.destination, 'LHR');
+      if (isStaticBrowseRec) {
+        // BROWSE RECOMMENDATION PATH
+        parsedTrip = BROWSE_RECOMMENDATIONS.find((rec) => rec.id === id);
+        if (isMounted) setIsPreloaded(true);
+      } else if (id && activeUser?.$id) {
+        // CUSTOM AI TRIP PATH (Main Trip Collection)
+        try {
+          const tripDocument = await getUserTripById(id, activeUser.$id);
+          if (tripDocument) {
+            parsedTrip = parseTripData(tripDocument);
+            if (isMounted) setIsPreloaded(false); // 👈 Forces Custom AI Trip path
+          }
+        } catch (err) {
+          console.warn("Could not query DB for trip ID:", err);
+        }
+      }
 
-    // Ensure departure date is strictly in the future
-    const validDepartureDate = formData.departureDate && formData.departureDate > new Date().toISOString().split('T')[0]
-      ? formData.departureDate
-      : getTomorrowDateString();
+      const geo = await fetch('https://api.db-ip.com/v2/free/self')
+        .then((r) => r.json())
+        .catch(() => ({ city: 'Lagos', countryCode: 'NG' }));
 
-    const execution = await functions.createExecution(
-      appwriteConfig.functionId,
-      JSON.stringify({
-        origin: sanitizedOrigin,
-        destination: sanitizedDestination,
-        departureDate: validDepartureDate,
-        departureTime: formData.departureTime || '12:00',
-        travelClass: formData.travelClass,
-      })
-    );
+      const sanitizedCity = geo.countryCode === 'MU' ? 'Lagos' : geo.city || 'Lagos';
+      const sanitizedCountry = geo.countryCode === 'MU' ? 'NG' : geo.countryCode || 'NG';
 
-    const responseData = JSON.parse(execution.responseBody);
-    if (responseData.success) {
-      setLiveFlight(responseData);
-    } else {
-      console.error('Duffel Core Pricing Refusal:', responseData.error);
+      const destinationName = 
+        parsedTrip?.location?.city || 
+        parsedTrip?.location?.name || 
+        parsedTrip?.name || 
+        parsedTrip?.title || 
+        parsedTrip?.destination || 
+        'Destination';
+
+      if (isMounted) {
+        setFormData((prev) => ({
+          ...prev,
+          fullName: prev.fullName || activeUser?.name || '',
+          email: prev.email || activeUser?.email || '',
+          destination: destinationName,
+          origin: prev.origin !== 'Detecting Position...' ? prev.origin : `${sanitizedCity}, ${sanitizedCountry}`,
+        }));
+      }
+    } catch (error) {
+      console.error('Data ingestion breakdown:', error);
+    } finally {
+      if (isMounted) setIsLoadingData(false);
     }
-  } catch (err) {
-    console.error('Cloud network handshake timeout:', err);
-  } finally {
-    setIsFetchingFlight(false);
-  }
-}, [formData.origin, formData.destination, formData.departureDate, formData.departureTime, formData.travelClass]);
+  };
 
+  fetchEcosystemData();
+  return () => {
+    isMounted = false;
+  };
+}, [id]);
+
+  const getTomorrowDateString = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
+  const fetchFlightQuote = useCallback(async () => {
+    setIsFetchingFlight(true);
+    try {
+      const sanitizedOrigin = convertToIATA(formData.origin, 'LOS');
+      const sanitizedDestination = convertToIATA(formData.destination, 'LHR');
+
+      const validDepartureDate = formData.departureDate && formData.departureDate > new Date().toISOString().split('T')[0]
+        ? formData.departureDate
+        : getTomorrowDateString();
+
+      const execution = await functions.createExecution(
+        appwriteConfig.functionId,
+        JSON.stringify({
+          origin: sanitizedOrigin,
+          destination: sanitizedDestination,
+          departureDate: validDepartureDate,
+          departureTime: formData.departureTime || '12:00',
+          travelClass: formData.travelClass,
+        })
+      );
+
+      const responseData = JSON.parse(execution.responseBody);
+      if (responseData.success) {
+        setLiveFlight(responseData);
+      } else {
+        console.error('Duffel Core Pricing Refusal:', responseData.error);
+      }
+    } catch (err) {
+      console.error('Cloud network handshake timeout:', err);
+    } finally {
+      setIsFetchingFlight(false);
+    }
+  }, [formData.origin, formData.destination, formData.departureDate, formData.departureTime, formData.travelClass]);
 
   // Dynamic Pricing Computation
   let finalFlightCost = telemetry.flightCost || 0;
@@ -216,7 +242,135 @@ const fetchFlightQuote = useCallback(async () => {
     }
   };
 
-  // Paystack & Order Processing Reading Strictly from Form Inputs
+// 2. SEPARATED FULFILLMENT LOGIC
+const handlePostPaymentFulfillment = async (response: { reference: string }) => {
+  const nameParts = formData.fullName.trim().split(' ');
+  const firstName = nameParts[0] || 'Passenger';
+  const lastName = nameParts.slice(1).join(' ') || firstName;
+
+  try {
+    const user = await account.get();
+
+    // =========================================================
+    // PATH A: BROWSE RECOMMENDATIONS ONLY
+    // Target: appwriteConfig.recommendationCollectionId
+    // =========================================================
+    if (isPreloaded) {
+      const generatedBookingID = `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const bookingDoc = await createRecommendationBooking({
+        userID: user.$id,
+        recommendationId: id || 'rec-unknown',
+        tripName: formData.destination,
+        totalPrice: finalGrandTotal,
+        distance: telemetry.distance || 0,
+        bookingStatus: 'confirmed',
+        paymentStatus: 'paid',
+        bookingID: generatedBookingID,
+        passengerName: formData.fullName,
+        amount: finalGrandTotal,
+        transportMode: transportMode || 'flight',
+        carrier: liveFlight?.airlineName || 'Nexa Air',
+        departureDate: formData.departureDate,
+      });
+
+      navigate(`/booking-success/${bookingDoc.$id}`, {
+        state: {
+          price: finalGrandTotal,
+          mode: transportMode,
+          passengerName: formData.fullName,
+          destination: formData.destination,
+          bookingId: generatedBookingID,
+        },
+      });
+      return; // Exit completely for Browse Recommendations
+    }
+
+    // =========================================================
+    // PATH B: CUSTOM AI TRIPS
+    // Target: appwriteConfig.tripCollectionId
+    // =========================================================
+    let realBookingId = response.reference; // Default to Paystack Reference
+    let carrierName = liveFlight?.airlineName || (transportMode === 'taxi' ? 'Nexa Ground Fleet' : 'Nexa Air');
+
+    if (transportMode === 'flight' && liveFlight) {
+      try {
+        const execution = await functions.createExecution(
+          appwriteConfig.functionId,
+          JSON.stringify({
+            action: 'create_order',
+            offerId: liveFlight.offerId,
+            paymentReference: response.reference,
+            passenger: {
+              first_name: firstName,
+              last_name: lastName,
+              email: formData.email,
+              phone_number: formData.phoneNumber,
+              born_on: formData.dateOfBirth,
+              gender: formData.gender,
+            },
+          })
+        );
+
+        const bookingResponse = JSON.parse(execution.responseBody);
+        if (bookingResponse.success && bookingResponse.data) {
+          realBookingId = bookingResponse.data.booking_reference || bookingResponse.data.id || response.reference;
+        }
+      } catch (funcErr) {
+        console.warn("Function execution warning, falling back to payment ref:", funcErr);
+      }
+    } else if (transportMode === 'taxi') {
+      realBookingId = `TAXI-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    }
+
+    // Single Atomic Update to your Main AI Trip Document
+  // Single Atomic Update to your Main AI Trip Document
+if (id) {
+  await database.updateDocument(
+    appwriteConfig.databaseId,
+    appwriteConfig.tripCollectionId,
+    id,
+    {
+      bookingStatus: 'confirmed',
+      paymentStatus: 'successful', // 👈 Fixed: must be 'successful', not 'paid'
+      paymentAmount: finalGrandTotal,
+      amount: finalGrandTotal,
+      paystackRef: response.reference,
+      BookingID: realBookingId,    // 👈 Fixed: capitalized 'B' to match Appwrite schema
+      passengerName: formData.fullName,
+      transportMode: transportMode || 'flight',
+      destination: formData.destination,
+      departureDate: formData.departureDate,
+      carrier: carrierName,
+      passengers: JSON.stringify([
+        {
+          given_name: firstName,
+          family_name: lastName,
+          email: formData.email,
+          phone: formData.phoneNumber,
+        },
+      ]),
+    }
+  );
+}
+
+    navigate(`/booking-success/${realBookingId}`, {
+      state: {
+        price: finalGrandTotal,
+        mode: transportMode,
+        passengerName: formData.fullName,
+        destination: formData.destination,
+        bookingId: realBookingId,
+      },
+    });
+  } catch (backendError: any) {
+    console.error('Payment finalized but fulfillment failed:', backendError);
+    alert(`Payment received, but ticket update failed: ${backendError.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -237,10 +391,6 @@ const fetchFlightQuote = useCallback(async () => {
 
     setIsSubmitting(true);
 
-    const nameParts = formData.fullName.trim().split(' ');
-    const firstName = nameParts[0] || 'Passenger';
-    const lastName = nameParts.slice(1).join(' ') || firstName;
-
     const NGN_EXCHANGE_RATE = 1500;
     const totalAmountInKobo = Math.round(finalGrandTotal * NGN_EXCHANGE_RATE * 100);
 
@@ -258,126 +408,8 @@ const fetchFlightQuote = useCallback(async () => {
             { display_name: 'Transit Protocol', variable_name: 'transit_protocol', value: transportMode || 'unknown' },
           ],
         },
-        callback: (response: { reference: string }) => {
-          (async () => {
-            try {
-              if (transportMode === 'flight' && liveFlight) {
-                const execution = await functions.createExecution(
-                  appwriteConfig.functionId,
-                  JSON.stringify({
-                    action: 'create_order',
-                    offerId: liveFlight.offerId,
-                    paymentReference: response.reference,
-                    passenger: {
-                      first_name: firstName,
-                      last_name: lastName,
-                      email: formData.email,
-                      phone_number: formData.phoneNumber,
-                      born_on: formData.dateOfBirth, // Must be YYYY-MM-DD
-                      gender: formData.gender,
-                    },
-                  })
-                );
-
-                const bookingResponse = JSON.parse(execution.responseBody);
-
-                if (bookingResponse.success) {
-                  const bookingId =
-                    bookingResponse.data?.id ||
-                    bookingResponse.data?.booking_reference ||
-                    response.reference;
-
-                  if (id) {
-                    await Promise.all([
-                      confirmPaymentStatus(id),
-                      confirmBookingStatus(id),
-                      storePaymentReference(id, response.reference),
-                      storePaymentAmount(id, finalGrandTotal),
-                      StoreBookingid(id, bookingId),
-                      database.updateDocument(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.tripCollectionId,
-                        id,
-                        {
-                          passengerName: formData.fullName,
-                          amount: finalGrandTotal,
-                          transportMode: 'flight',
-                          destination: formData.destination,
-                          departureDate: formData.departureDate,
-                          carrier: liveFlight.airlineName || 'Nexa Air',
-                          passengers: JSON.stringify([
-                            {
-                              id: '1',
-                              given_name: firstName,
-                              family_name: lastName,
-                            },
-                          ]),
-                        }
-                      ),
-                    ]);
-                  }
-
-                  navigate(`/booking-success/${bookingId}`, {
-                    state: {
-                      ticket: bookingResponse.data,
-                      price: finalGrandTotal,
-                      mode: 'flight',
-                      passengerName: formData.fullName,
-                      destination: formData.destination,
-                    },
-                  });
-                } else {
-                  throw new Error(
-                    bookingResponse.error || 'Airline routing network rejected live reservation.'
-                  );
-                }
-              } else if (transportMode === 'taxi') {
-                if (id) {
-                  await Promise.all([
-                    confirmPaymentStatus(id),
-                    storePaymentReference(id, response.reference),
-                    storePaymentAmount(id, finalGrandTotal),
-                    database.updateDocument(
-                      appwriteConfig.databaseId,
-                      appwriteConfig.tripCollectionId,
-                      id,
-                      {
-                        passengerName: formData.fullName,
-                        amount: finalGrandTotal,
-                        transportMode: 'taxi',
-                        destination: formData.destination,
-                        departureDate: formData.departureDate,
-                        carrier: 'Nexa Drive Protocol',
-                        passengers: JSON.stringify([
-                          {
-                            id: '1',
-                            given_name: firstName,
-                            family_name: lastName,
-                          },
-                        ]),
-                      }
-                    ),
-                  ]);
-                }
-
-                navigate(`/booking-success/${response.reference}`, {
-                  state: {
-                    price: finalGrandTotal,
-                    mode: 'taxi',
-                    destination: formData.destination,
-                    passengerName: formData.fullName,
-                  },
-                });
-              }
-            } catch (backendError: any) {
-              console.error('Payment finalized but fulfillment failed:', backendError);
-              alert(
-                `Payment received, but booking ticket creation failed: ${backendError.message}. Ref: ${response.reference}`
-              );
-            } finally {
-              setIsSubmitting(false);
-            }
-          })();
+        callback: function (response: { reference: string }) {
+          handlePostPaymentFulfillment(response);
         },
         onClose: () => {
           setIsSubmitting(false);

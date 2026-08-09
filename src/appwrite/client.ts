@@ -10,6 +10,7 @@ export const appwriteConfig = {
   databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID ,    
  userCollectionId: import.meta.env.VITE_APPWRITE_USERS_COLLECTION_ID ,
  tripCollectionId: import.meta.env.VITE_APPWRITE_TRIPS_COLLECTION_ID ,
+ recommendationCollectionId: import.meta.env.VITE_APPWRITE_RECOMMENDATIONS_COLLECTION_ID,
  functionId: import.meta.env.VITE_NEXA_BOOKING_FUNCTION_ID
 }
 

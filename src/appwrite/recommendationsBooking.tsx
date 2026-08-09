@@ -1,0 +1,52 @@
+import { ID } from 'appwrite';
+import { database, appwriteConfig } from './client';
+
+export interface RecommendationBookingData {
+  userID: string;
+  recommendationId: string;
+  tripName: string;
+  totalPrice: number;
+  distance: number;
+  bookingStatus: 'confirmed' | 'pending' | 'cancelled';
+  paymentStatus: 'paid' | 'unpaid' | 'failed';
+  bookingID?: string;
+  passengerName?: string;
+  amount?: number;
+  transportMode?: string;
+  carrier?: string;
+  departureDate?: string;
+}
+
+export const createRecommendationBooking = async (bookingData: RecommendationBookingData) => {
+  try {
+    const bookingIDGenerated = bookingData.bookingID || `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const payload = {
+      userID: String(bookingData.userID || ''),
+      recommendationId: String(bookingData.recommendationId || ''),
+      tripName: String(bookingData.tripName || 'Unknown Destination'),
+      totalPrice: Number(bookingData.totalPrice) || 0,
+      distance: Number(bookingData.distance) || 0,
+      bookingStatus: bookingData.bookingStatus,
+      paymentStatus: bookingData.paymentStatus,
+      bookingID: bookingIDGenerated,
+      passengerName: bookingData.passengerName || '',
+      amount: Number(bookingData.totalPrice) || 0,
+      transportMode: bookingData.transportMode || 'flight',
+      carrier: bookingData.carrier || 'Nexa Travel Hub',
+      departureDate: bookingData.departureDate || new Date().toISOString().split('T')[0],
+    };
+
+    const response = await database.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.recommendationCollectionId,
+      ID.unique(),
+      payload
+    );
+
+    return response;
+  } catch (error) {
+    console.error('Error creating recommendation booking:', error);
+    throw error;
+  }
+};

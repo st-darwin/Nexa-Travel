@@ -5,9 +5,10 @@ import {
   MarkersDirective, MarkerDirective, NavigationLinesDirective, 
   NavigationLineDirective, Inject, Marker, NavigationLine, Zoom 
 } from '@syncfusion/ej2-react-maps';
-import { useLoaderData, type LoaderFunctionArgs, useNavigate } from 'react-router-dom';
+import { useLoaderData, type LoaderFunctionArgs, useNavigate, useLocation } from 'react-router-dom';
 import { getUserTripById } from '../../appwrite/Trips';
 import { parseTripData } from '../../lib/utils';
+import { BROWSE_RECOMMENDATIONS } from '../../constants/recommendations';
 
 interface Coordinates {
   lat: number;
@@ -34,9 +35,28 @@ const calculateHaversine = (lat1: number, lon1: number, lat2: number, lon2: numb
 export const GetIdUsingParams = async ({ params }: LoaderFunctionArgs) => {
   const { id } = params;
   if (!id) throw new Error('Unable to get id from the usertripdetails');
-  const user = await account.get();
-  
-  return { id, userId: user.$id };
+
+  // 1. Resolve static recommendations locally to avoid Appwrite 404 errors
+  const staticTrip = BROWSE_RECOMMENDATIONS.find((rec) => rec.id === id);
+  if (staticTrip) {
+    return { id, trip: staticTrip, isPreloaded: true, userId: null };
+  }
+
+  // 2. Fetch user-generated trips from Appwrite Database
+  try {
+    const user = await account.get();
+    const tripDocument = await getUserTripById(id, user.$id);
+    
+    return { 
+      id, 
+      userId: user.$id, 
+      trip: tripDocument ? parseTripData(tripDocument) : null,
+      isPreloaded: false 
+    };
+  } catch (error) {
+    console.warn("Could not load trip from Appwrite, using fallback checks:", error);
+    return { id, userId: null, trip: null, isPreloaded: false };
+  }
 };
 
 const LOADING_STAGES: LoadingStep[] = [
@@ -49,6 +69,9 @@ const LOADING_STAGES: LoadingStep[] = [
 
 export const TelemetrySummary = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const raw = useLoaderData() as { id: string; userId: string | null; trip: any; isPreloaded?: boolean };
+
   const [currentLoc, setCurrentLoc] = useState<Coordinates | null>(null);
   const [destLoc, setDestLoc] = useState<Coordinates | null>(null);
   const [distance, setDistance] = useState<number>(0);
@@ -57,8 +80,11 @@ export const TelemetrySummary = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isCompiling, setIsCompiling] = useState<boolean>(true);
   const [isLocationDenied, setIsLocationDenied] = useState<boolean>(false);
-  
-  const raw = useLoaderData() as { id: string; userId: string };
+
+  // Evaluate active trip payload across navigation state, preloaded static data, or loader document
+  const activeTrip = useMemo(() => {
+    return location.state?.preloadedTrip || raw.trip || BROWSE_RECOMMENDATIONS.find(rec => rec.id === raw.id);
+  }, [location.state?.preloadedTrip, raw.trip, raw.id]);
 
   const estimatedBaseFare = 45.00; 
   const estimatedDistanceTariff = useMemo(() => distance * 0.08, [distance]); 
@@ -99,38 +125,45 @@ export const TelemetrySummary = () => {
 
     const syncEcosystemTelemetry = async () => {
       try {
-        const tripDocument = await getUserTripById(raw.id, raw.userId);
-        const tripData = parseTripData(tripDocument);
+        if (!activeTrip) {
+          console.warn("Telemetry resolution skipped: activeTrip context not available.");
+          if (isMounted) setIsCompiling(false);
+          return;
+        }
 
-        if (tripData.location && tripData.location.coordinates) {
-          const [targetLat, targetLng] = tripData.location.coordinates;
-          const destinationTarget = { lat: parseFloat(targetLat), lng: parseFloat(targetLng) };
-          
-          if (!isMounted) return;
-          setDestLoc(destinationTarget);
-          setCurrentStep(2);
+        let destinationTarget: Coordinates = { lat: 36.3932, lng: 25.4615 }; // Default fallback coordinates (e.g. Santorini)
 
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                runSimulationSequence(
-                  destinationTarget, 
-                  { lat: position.coords.latitude, lng: position.coords.longitude }, 
-                  false
-                );
-              },
-              (geoError) => {
-                console.warn("Hardware geolocation stream blocked. Initializing hub fallback protocols.", geoError);
-                runSimulationSequence(
-                  destinationTarget, 
-                  { lat: 6.5244, lng: 3.3792 }, 
-                  true
-                );
-              }
-            );
-          } else {
-            if (isMounted) setIsCompiling(false);
-          }
+        if (activeTrip.location?.coordinates && Array.isArray(activeTrip.location.coordinates)) {
+          const [targetLat, targetLng] = activeTrip.location.coordinates;
+          destinationTarget = { lat: parseFloat(targetLat), lng: parseFloat(targetLng) };
+        } else if (activeTrip.coordinates) {
+          destinationTarget = { lat: parseFloat(activeTrip.coordinates.lat), lng: parseFloat(activeTrip.coordinates.lng) };
+        }
+
+        if (!isMounted) return;
+        setDestLoc(destinationTarget);
+        setCurrentStep(2);
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              runSimulationSequence(
+                destinationTarget, 
+                { lat: position.coords.latitude, lng: position.coords.longitude }, 
+                false
+              );
+            },
+            (geoError) => {
+              console.warn("Hardware geolocation stream blocked. Initializing hub fallback protocols.", geoError);
+              runSimulationSequence(
+                destinationTarget, 
+                { lat: 6.5244, lng: 3.3792 }, // Default origin: Lagos
+                true
+              );
+            }
+          );
+        } else {
+          if (isMounted) setIsCompiling(false);
         }
       } catch (error) {
         console.error("Telemetry resolution engine failure:", error);
@@ -143,7 +176,7 @@ export const TelemetrySummary = () => {
     return () => {
       isMounted = false;
     };
-  }, [raw.id, raw.userId]);
+  }, [raw.id, activeTrip]);
 
   const handleProceedToBooking = () => {
     navigate(`/Home/book/${raw.id}`, {
@@ -151,7 +184,8 @@ export const TelemetrySummary = () => {
         distance,
         flightCost: projectedFlightCost,
         platformFee: projectedNexaFee,
-        totalPrice: estimatedGrandTotal
+        totalPrice: estimatedGrandTotal,
+        preloadedTrip: activeTrip
       }
     });
   };

@@ -66,8 +66,16 @@ export const UserSideBarItems =[
   label:"AI Travel Chat",
   icon: "/assets/icons/chatbot.svg"
   
-}
+},
 
+{
+  id: 6,
+  name: 'Browse Recommendations',
+  href: 'browse-recommendations',
+  label:"Browse Recommendations",
+  icon: "/assets/icons/browse.svg"
+
+}
  
 
 

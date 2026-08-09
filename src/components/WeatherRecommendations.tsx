@@ -1,4 +1,5 @@
 import { Sun, CloudSun, MapPin, ArrowUpRight } from "lucide-react";
+import  { useNavigate } from "react-router-dom";    
 
 interface DestinationCard {
   id: string;
@@ -10,8 +11,16 @@ interface DestinationCard {
   tag: string;
 }
 
+
 const WeatherRecommendations = ({ recommendations }: { recommendations: DestinationCard[] }) => {
-  return (
+  
+  const navigate = useNavigate();
+    const handleClick = () =>{
+    // Navigate to the Browse Recommendations page
+    navigate('/Home/browse-recommendations');
+  }
+  
+    return (
     <section className="my-10 space-y-5">
       {/* Section Header */}
       <div className="flex items-center justify-between px-1">
@@ -26,7 +35,10 @@ const WeatherRecommendations = ({ recommendations }: { recommendations: Destinat
           </h3>
         </div>
 
-        <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors flex items-center gap-1">
+        <button 
+          className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors flex items-center gap-1"
+          onClick={handleClick}
+        >
           Explore all <ArrowUpRight className="w-3.5 h-3.5" />
         </button>
       </div>

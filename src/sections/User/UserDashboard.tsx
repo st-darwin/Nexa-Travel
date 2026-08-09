@@ -8,7 +8,7 @@ import UserHeader from "../../components/UserHeader";
 import { account } from "../../appwrite/client";
 import { getUserTrips } from "../../appwrite/Trips";
 import { parseTripData } from "../../lib/utils";
-import {AIBookingRateCard} from "./AIBookingRateCard";
+import { AIBookingRateCard } from "./AIBookingRateCard";
 import { TripWeather } from "../../components/TripWeather";
 import WeatherRecommendations from "../../components/WeatherRecommendations";
 
@@ -41,7 +41,6 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
   const offset = (page - 1) * limit;
 
-
   try {
     const user = await account.get();
     
@@ -53,39 +52,50 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       const locationString =
         typeof parsed?.location === "object"
           ? parsed.location.city || "Global"
-          : parsed?.location || "Destination Unknown";
+          : parsed?.location || raw.destination || "Destination Unknown";
 
+      // Robust booked check covering varied Appwrite schemas
       const isBooked =
-        raw.bookingStatus === "confirmed" || raw.paymentStatus === "successful";
+        raw.isBooked === true ||
+        raw.bookingStatus === "confirmed" ||
+        raw.paymentStatus === "successful" ||
+        raw.paymentStatus === "paid" ||
+        Boolean(raw.bookingID || raw.BookingID || raw.paystackRef);
 
-      // Normalize tags safely
       const rawTags = [parsed?.travelStyle, ...(Array.isArray(parsed?.interests) ? parsed.interests : [parsed?.interests])];
       const normalizedTags = rawTags.filter(Boolean) as string[];
 
+      // Support varying case variations for Appwrite fields
+      const actualPaidAmount = raw.amount || raw.paymentAmount || raw.totalPrice || null;
+      const resolvedBookingId = raw.bookingID || raw.BookingID || raw.bookingId || raw.paystackRef || raw.$id;
+
       return {
         id: raw.$id,
-        name: parsed?.name || "Untitled Trip",
+        name: parsed?.name || raw.tripName || raw.destination || "Untitled Trip",
         imgUrl:
           raw.imgUrls?.[0] ||
           `https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80`,
         location: locationString,
-        estimatedPrice: parsed?.estimatedPrice || raw.paymentAmount,
+        estimatedPrice: actualPaidAmount || parsed?.estimatedPrice || raw.price || 0,
         tags: normalizedTags,
         isBooked,
-       paymentAmount : raw.paymentAmount || null,
-        
-        bookingId: raw.BookingID || raw.$id,
+        paymentAmount: actualPaidAmount,
+        bookingId: resolvedBookingId,
         createdAt: raw.$createdAt,
       };
     });
 
+    // Locate the primary booked trip for the Active Journey banner
     const currentBookedTrip = mappedTrips.find((trip) => trip.isBooked) || null;
     const totalPages = Math.ceil(total / limit) || 1;
+
+    // Filter confirmed count
+    const confirmedCount = mappedTrips.filter((t) => t.isBooked).length;
 
     return {
       user: user.name,
       totalGenerated: total,
-      totalBooked: mappedTrips.filter((t) => t.isBooked).length, // Recommended: Fetch overall count from Appwrite query if needed
+      totalBooked: confirmedCount,
       currentBookedTrip,
       allTrips: mappedTrips,
       currentPage: page,
@@ -111,10 +121,10 @@ const UserDashboard = () => {
   const [, setSearchParams] = useSearchParams();
   
   const sampleDestinations = [
-  { id: "1", name: "Santorini", country: "Greece", temp: 26, condition: "Sunny & Clear", tag: "Beach & Views" },
-  { id: "2", name: "Positano", country: "Italy", temp: 24, condition: "Mainly Clear", tag: "Coastal Walk" },
-  { id: "3", name: "Kyoto", country: "Japan", temp: 22, condition: "Clear Sky", tag: "Outdoor Culture" },
-];
+    { id: "1", name: "Santorini", country: "Greece", temp: 26, condition: "Sunny & Clear", tag: "Beach & Views" },
+    { id: "2", name: "Positano", country: "Italy", temp: 24, condition: "Mainly Clear", tag: "Coastal Walk" },
+    { id: "3", name: "Kyoto", country: "Japan", temp: 22, condition: "Clear Sky", tag: "Outdoor Culture" },
+  ];
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > data.totalPages) return;
@@ -131,8 +141,6 @@ const UserDashboard = () => {
         title={data.user ? `Welcome back, ${data.user} 👋` : "Welcome Guest 👋"}
         description="Your world, organized and synchronized in real-time."
       />
-
-      
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -155,18 +163,8 @@ const UserDashboard = () => {
             </div>
           </div>
           <div className="w-10 h-10 bg-zinc-50 border border-zinc-200/60 rounded-xl flex items-center justify-center text-zinc-600">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.75}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-              />
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
             </svg>
           </div>
         </div>
@@ -187,29 +185,20 @@ const UserDashboard = () => {
             </div>
           </div>
           <div className="w-10 h-10 bg-emerald-50 border border-emerald-200/60 rounded-xl flex items-center justify-center text-emerald-600">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.75}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z"
-              />
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
             </svg>
           </div>
         </div>
       </div>
+
       <WeatherRecommendations recommendations={sampleDestinations} />
 
       {/* AI Booking Rate Card */}
       <AIBookingRateCard />
 
-
-         {data.currentBookedTrip && (
+      {/* Active Journey Manifest Banner */}
+      {data.currentBookedTrip && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400">
@@ -221,20 +210,20 @@ const UserDashboard = () => {
           </div>
 
           <div className="bg-zinc-950 border border-zinc-800/90 rounded-2xl p-6 text-white shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-zinc-800/20 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16 group-hover:bg-zinc-800/30 transition-all duration-700"></div>
+            <div className="absolute top-0 right-0 w-80 h-80 bg-zinc-800/20 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16 group-hover:bg-zinc-800/30 transition-all duration-700" />
 
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-4 max-w-xl">
                 <div className="flex items-center gap-2.5">
                   <span className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 text-zinc-200 text-[9px] font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-inner">
                     <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
                     </span>
                     Confirmed Booking
                   </span>
                   <span className="text-[10px] font-mono text-zinc-500">
-                    ID: #{data.currentBookedTrip.id.slice(-6).toUpperCase()}
+                    ID: #{data.currentBookedTrip.bookingId ? data.currentBookedTrip.bookingId.slice(-6).toUpperCase() : data.currentBookedTrip.id.slice(-6).toUpperCase()}
                   </span>
                 </div>
 
@@ -245,32 +234,16 @@ const UserDashboard = () => {
 
                   <div className="text-xs font-mono text-zinc-400 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="text-zinc-300 flex items-center gap-1.5">
-                      <svg
-                        className="w-3.5 h-3.5 text-zinc-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-                        />
+                      <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                       </svg>
                       {data.currentBookedTrip.location}
                     </span>
                     <span className="text-zinc-600">•</span>
                     <span className="text-zinc-500">
                       Created{" "}
-                      {new Date(
-                        data.currentBookedTrip.createdAt
-                      ).toLocaleDateString()}
+                      {new Date(data.currentBookedTrip.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -278,10 +251,7 @@ const UserDashboard = () => {
                 {data.currentBookedTrip.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {data.currentBookedTrip.tags.map((tag: string, i: number) => (
-                      <span
-                        key={i}
-                        className="bg-zinc-900 border border-zinc-800 text-zinc-400 font-mono text-[9px] font-medium px-2.5 py-0.5 rounded-md"
-                      >
+                      <span key={i} className="bg-zinc-900 border border-zinc-800 text-zinc-400 font-mono text-[9px] font-medium px-2.5 py-0.5 rounded-md">
                         #{tag}
                       </span>
                     ))}
@@ -290,13 +260,16 @@ const UserDashboard = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-5 border-t lg:border-t-0 border-zinc-900 pt-5 lg:pt-0">
+                {/* FIXED TOTAL FARE DISPLAY */}
                 <div className="text-left lg:text-right font-mono">
                   <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block">
                     Total Fare
                   </span>
                   <span className="text-xl font-bold text-white tracking-tight">
-                    {data.currentBookedTrip.estimatedPrice
+                    {data.currentBookedTrip.paymentAmount !== null && data.currentBookedTrip.paymentAmount !== undefined
                       ? `$${Number(data.currentBookedTrip.paymentAmount).toFixed(2)}`
+                      : data.currentBookedTrip.estimatedPrice
+                      ? `$${Number(data.currentBookedTrip.estimatedPrice).toFixed(2)}`
                       : "Paid"}
                   </span>
                 </div>
@@ -313,18 +286,8 @@ const UserDashboard = () => {
                   className="w-full sm:w-auto px-5 py-2.5 bg-white hover:bg-zinc-200 active:scale-95 text-zinc-950 font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-white/5 flex items-center justify-center gap-2 group/btn"
                 >
                   <span>View Ticket</span>
-                  <svg
-                    className="w-4 h-4 text-zinc-950 transition-transform group-hover/btn:translate-x-0.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z"
-                    />
+                  <svg className="w-4 h-4 text-zinc-950 transition-transform group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
                   </svg>
                 </button>
               </div>
@@ -333,13 +296,9 @@ const UserDashboard = () => {
         </div>
       )}
 
-
-
       {/* Active Weather forecast */}
       <TripWeather destinationCity={data.currentBookedTrip?.location || ''} />
 
-      {/* Active Journey Manifest */}
-   
       {/* Recent Trips Feed */}
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between border-b border-zinc-200/60 pb-3">
@@ -351,18 +310,8 @@ const UserDashboard = () => {
             className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
           >
             <span>Generate Trip</span>
-            <svg
-              className="w-3 h-4 text-emerald-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4.5v15m7.5-7.5h-15"
-              />
+            <svg className="w-3 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
           </button>
         </div>
@@ -437,18 +386,8 @@ const UserDashboard = () => {
                         className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1"
                       >
                         <span>Ticket</span>
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z"
-                          />
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
                         </svg>
                       </button>
                     ) : (
