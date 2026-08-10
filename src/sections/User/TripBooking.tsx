@@ -35,6 +35,15 @@ interface LiveFlightPayload {
   offerId: string;
 }
 
+interface Passenger {
+  given_name: string;
+  family_name: string;
+  email: string;
+  phone: string;
+  dateOfBirth?: string;
+  gender?: 'm' | 'f';
+}
+
 const CLASS_MULTIPLIERS: Record<TravelClass, number> = {
   economy: 1.0,
   premium: 1.35,
@@ -81,94 +90,118 @@ export const TripBooking: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [isFetchingFlight, setIsFetchingFlight] = useState<boolean>(false);
   const [liveFlight, setLiveFlight] = useState<LiveFlightPayload | null>(null);
-  const [isPreloaded, setIsPreloaded] = useState<boolean>(false);
+  const [, setIsPreloaded] = useState<boolean>(false);
 
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
     origin: 'Detecting Position...',
     destination: 'Resolving Destination...',
     departureDate: '',
     departureTime: '',
     travelClass: 'economy' as TravelClass,
     specialRequests: '',
-    phoneNumber: '',
-    dateOfBirth: '',
-    gender: 'm' as 'm' | 'f',
   });
 
+  // Multi-Passenger Manifest State
+  const [passengers, setPassengers] = useState<Passenger[]>([
+    { given_name: '', family_name: '', email: '', phone: '', dateOfBirth: '', gender: 'm' }
+  ]);
+
+  const handlePassengerChange = (index: number, field: keyof Passenger, value: string) => {
+    const updated = [...passengers];
+    updated[index] = { ...updated[index], [field]: value };
+    setPassengers(updated);
+  };
+
+  const addPassengerField = () => {
+    setPassengers([...passengers, { given_name: '', family_name: '', email: '', phone: '', dateOfBirth: '', gender: 'm' }]);
+  };
+
+  const removePassengerField = (index: number) => {
+    if (passengers.length === 1) return;
+    setPassengers(passengers.filter((_, i) => i !== index));
+  };
+
   // Load Route/Ecosystem Context
-// 1. STRICT DETECTION IN useEffect
-useEffect(() => {
-  let isMounted = true;
+  useEffect(() => {
+    let isMounted = true;
 
-  const fetchEcosystemData = async () => {
-    try {
-      let activeUser = null;
+    const fetchEcosystemData = async () => {
       try {
-        activeUser = await account.get();
-      } catch {
-        // Unauthenticated or guest fallback
-      }
-
-      let parsedTrip: any = null;
-
-      // Check if this is EXPLICITLY a Browse Recommendation item
-      const isStaticBrowseRec = BROWSE_RECOMMENDATIONS.some((rec) => rec.id === id);
-
-      if (isStaticBrowseRec) {
-        // BROWSE RECOMMENDATION PATH
-        parsedTrip = BROWSE_RECOMMENDATIONS.find((rec) => rec.id === id);
-        if (isMounted) setIsPreloaded(true);
-      } else if (id && activeUser?.$id) {
-        // CUSTOM AI TRIP PATH (Main Trip Collection)
+        let activeUser = null;
         try {
-          const tripDocument = await getUserTripById(id, activeUser.$id);
-          if (tripDocument) {
-            parsedTrip = parseTripData(tripDocument);
-            if (isMounted) setIsPreloaded(false); // 👈 Forces Custom AI Trip path
-          }
-        } catch (err) {
-          console.warn("Could not query DB for trip ID:", err);
+          activeUser = await account.get();
+        } catch {
+          // Unauthenticated or guest fallback
         }
+
+        let parsedTrip: any = null;
+        const isStaticBrowseRec = BROWSE_RECOMMENDATIONS.some((rec) => rec.id === id);
+
+        if (isStaticBrowseRec) {
+          parsedTrip = BROWSE_RECOMMENDATIONS.find((rec) => rec.id === id);
+          if (isMounted) setIsPreloaded(true);
+        } else if (id && activeUser?.$id) {
+          try {
+            const tripDocument = await getUserTripById(id, activeUser.$id);
+            if (tripDocument) {
+              parsedTrip = parseTripData(tripDocument);
+              if (isMounted) setIsPreloaded(false);
+            }
+          } catch (err) {
+            console.warn("Could not query DB for trip ID:", err);
+          }
+        }
+
+        const geo = await fetch('https://api.db-ip.com/v2/free/self')
+          .then((r) => r.json())
+          .catch(() => ({ city: 'Lagos', countryCode: 'NG' }));
+
+        const sanitizedCity = geo.countryCode === 'MU' ? 'Lagos' : geo.city || 'Lagos';
+        const sanitizedCountry = geo.countryCode === 'MU' ? 'NG' : geo.countryCode || 'NG';
+
+        const destinationName = 
+          parsedTrip?.location?.city || 
+          parsedTrip?.location?.name || 
+          parsedTrip?.name || 
+          parsedTrip?.title || 
+          parsedTrip?.destination || 
+          'Destination';
+
+        if (isMounted) {
+          setFormData((prev) => ({
+            ...prev,
+            destination: destinationName,
+            origin: prev.origin !== 'Detecting Position...' ? prev.origin : `${sanitizedCity}, ${sanitizedCountry}`,
+          }));
+
+          // Pre-populate primary passenger with account info if available
+          if (activeUser?.name) {
+            const nameParts = activeUser.name.trim().split(' ');
+            setPassengers((prev) => {
+              const updated = [...prev];
+              if (!updated[0].given_name) {
+                updated[0].given_name = nameParts[0] || '';
+                updated[0].family_name = nameParts.slice(1).join(' ') || '';
+              }
+              if (!updated[0].email && activeUser.email) {
+                updated[0].email = activeUser.email;
+              }
+              return updated;
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Data ingestion breakdown:', error);
+      } finally {
+        if (isMounted) setIsLoadingData(false);
       }
+    };
 
-      const geo = await fetch('https://api.db-ip.com/v2/free/self')
-        .then((r) => r.json())
-        .catch(() => ({ city: 'Lagos', countryCode: 'NG' }));
-
-      const sanitizedCity = geo.countryCode === 'MU' ? 'Lagos' : geo.city || 'Lagos';
-      const sanitizedCountry = geo.countryCode === 'MU' ? 'NG' : geo.countryCode || 'NG';
-
-      const destinationName = 
-        parsedTrip?.location?.city || 
-        parsedTrip?.location?.name || 
-        parsedTrip?.name || 
-        parsedTrip?.title || 
-        parsedTrip?.destination || 
-        'Destination';
-
-      if (isMounted) {
-        setFormData((prev) => ({
-          ...prev,
-          fullName: prev.fullName || activeUser?.name || '',
-          email: prev.email || activeUser?.email || '',
-          destination: destinationName,
-          origin: prev.origin !== 'Detecting Position...' ? prev.origin : `${sanitizedCity}, ${sanitizedCountry}`,
-        }));
-      }
-    } catch (error) {
-      console.error('Data ingestion breakdown:', error);
-    } finally {
-      if (isMounted) setIsLoadingData(false);
-    }
-  };
-
-  fetchEcosystemData();
-  return () => {
-    isMounted = false;
-  };
-}, [id]);
+    fetchEcosystemData();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   const getTomorrowDateString = () => {
     const tomorrow = new Date();
@@ -210,21 +243,26 @@ useEffect(() => {
     }
   }, [formData.origin, formData.destination, formData.departureDate, formData.departureTime, formData.travelClass]);
 
-  // Dynamic Pricing Computation
-  let finalFlightCost = telemetry.flightCost || 0;
-  let finalPlatformFee = telemetry.platformFee || 0;
-  let finalGrandTotal = telemetry.totalPrice || 0;
+  // Dynamic Pricing Computation (Multiplier applied per passenger count)
+  let baseFlightCost = telemetry.flightCost || 0;
+  let basePlatformFee = telemetry.platformFee || 0;
+  let baseGrandTotal = telemetry.totalPrice || 0;
 
   if (transportMode === 'flight' && liveFlight) {
     const classMultiplier = CLASS_MULTIPLIERS[formData.travelClass] || 1;
-    finalFlightCost = liveFlight.baseTicketCost * classMultiplier;
-    finalPlatformFee = liveFlight.platformFee * classMultiplier;
-    finalGrandTotal = finalFlightCost + finalPlatformFee;
+    baseFlightCost = liveFlight.baseTicketCost * classMultiplier;
+    basePlatformFee = liveFlight.platformFee * classMultiplier;
+    baseGrandTotal = baseFlightCost + basePlatformFee;
   } else if (transportMode === 'taxi') {
-    finalFlightCost = (telemetry.flightCost || 100) * 0.65;
-    finalPlatformFee = finalFlightCost * 0.08;
-    finalGrandTotal = finalFlightCost + finalPlatformFee;
+    baseFlightCost = (telemetry.flightCost || 100) * 0.65;
+    basePlatformFee = baseFlightCost * 0.08;
+    baseGrandTotal = baseFlightCost + basePlatformFee;
   }
+
+  const passengerMultiplier = passengers.length;
+  const finalFlightCost = baseFlightCost * passengerMultiplier;
+  const finalPlatformFee = basePlatformFee * passengerMultiplier;
+  const finalGrandTotal = baseGrandTotal * passengerMultiplier;
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -242,146 +280,131 @@ useEffect(() => {
     }
   };
 
-// 2. SEPARATED FULFILLMENT LOGIC
-const handlePostPaymentFulfillment = async (response: { reference: string }) => {
-  const nameParts = formData.fullName.trim().split(' ');
-  const firstName = nameParts[0] || 'Passenger';
-  const lastName = nameParts.slice(1).join(' ') || firstName;
+  const handlePostPaymentFulfillment = async (response: { reference: string }) => {
+    const primaryPassenger = passengers[0];
+    const primaryFullName = `${primaryPassenger.given_name} ${primaryPassenger.family_name}`.trim();
 
-  try {
-    const user = await account.get();
+    try {
+      const user = await account.get();
+      const isStaticBrowseRec = BROWSE_RECOMMENDATIONS.some((rec) => rec.id === id);
 
-    // =========================================================
-    // PATH A: BROWSE RECOMMENDATIONS ONLY
-    // Target: appwriteConfig.recommendationCollectionId
-    // =========================================================
-    if (isPreloaded) {
-      const generatedBookingID = `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      if (isStaticBrowseRec) {
+        const generatedBookingID = `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-      const bookingDoc = await createRecommendationBooking({
-        userID: user.$id,
-        recommendationId: id || 'rec-unknown',
-        tripName: formData.destination,
-        totalPrice: finalGrandTotal,
-        distance: telemetry.distance || 0,
-        bookingStatus: 'confirmed',
-        paymentStatus: 'paid',
-        bookingID: generatedBookingID,
-        passengerName: formData.fullName,
-        amount: finalGrandTotal,
-        transportMode: transportMode || 'flight',
-        carrier: liveFlight?.airlineName || 'Nexa Air',
-        departureDate: formData.departureDate,
-      });
+        const bookingDoc = await createRecommendationBooking({
+          userID: user.$id,
+          recommendationId: id || 'rec-unknown',
+          tripName: formData.destination,
+          totalPrice: finalGrandTotal,
+          distance: telemetry.distance || 0,
+          bookingStatus: 'confirmed',
+          paymentStatus: 'paid',
+          bookingID: generatedBookingID,
+          passengerName: primaryFullName,
+          amount: finalGrandTotal,
+          transportMode: transportMode || 'flight',
+          carrier: liveFlight?.airlineName || 'Nexa Air',
+          departureDate: formData.departureDate,
+          passengers: JSON.stringify(passengers),
+        });
 
-      navigate(`/booking-success/${bookingDoc.$id}`, {
+        navigate(`/booking-success/${bookingDoc.$id}`, {
+          state: {
+            price: finalGrandTotal,
+            mode: transportMode,
+            passengerName: primaryFullName,
+            destination: formData.destination,
+            bookingId: generatedBookingID,
+          },
+        });
+        return;
+      }
+
+      let realBookingId = response.reference;
+      let carrierName = liveFlight?.airlineName || (transportMode === 'taxi' ? 'Nexa Ground Fleet' : 'Nexa Air');
+
+      if (transportMode === 'flight' && liveFlight) {
+        try {
+          const execution = await functions.createExecution(
+            appwriteConfig.functionId,
+            JSON.stringify({
+              action: 'create_order',
+              offerId: liveFlight.offerId,
+              paymentReference: response.reference,
+              passenger: {
+                first_name: primaryPassenger.given_name,
+                last_name: primaryPassenger.family_name,
+                email: primaryPassenger.email,
+                phone_number: primaryPassenger.phone,
+                born_on: primaryPassenger.dateOfBirth,
+                gender: primaryPassenger.gender,
+              },
+            })
+          );
+
+          const bookingResponse = JSON.parse(execution.responseBody);
+          if (bookingResponse.success && bookingResponse.data) {
+            realBookingId = bookingResponse.data.booking_reference || bookingResponse.data.id || response.reference;
+          }
+        } catch (funcErr) {
+          console.warn("Function execution warning, falling back to payment ref:", funcErr);
+        }
+      } else if (transportMode === 'taxi') {
+        realBookingId = `TAXI-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      }
+
+      if (id) {
+        await database.updateDocument(
+          appwriteConfig.databaseId,
+          appwriteConfig.tripCollectionId,
+          id,
+          {
+            bookingStatus: 'confirmed',
+            paymentStatus: 'successful',
+            paymentAmount: finalGrandTotal,
+            amount: finalGrandTotal,
+            paystackRef: response.reference,
+            BookingID: realBookingId,
+            passengerName: primaryFullName,
+            transportMode: transportMode || 'flight',
+            destination: formData.destination,
+            departureDate: formData.departureDate,
+            carrier: carrierName,
+            passengers: JSON.stringify(passengers),
+          }
+        );
+      }
+
+      navigate(`/booking-success/${realBookingId}`, {
         state: {
           price: finalGrandTotal,
           mode: transportMode,
-          passengerName: formData.fullName,
+          passengerName: primaryFullName,
           destination: formData.destination,
-          bookingId: generatedBookingID,
+          bookingId: realBookingId,
         },
       });
-      return; // Exit completely for Browse Recommendations
+    } catch (backendError: any) {
+      console.error('Payment finalized but fulfillment failed:', backendError);
+      alert(`Payment received, but ticket update failed: ${backendError.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // =========================================================
-    // PATH B: CUSTOM AI TRIPS
-    // Target: appwriteConfig.tripCollectionId
-    // =========================================================
-    let realBookingId = response.reference; // Default to Paystack Reference
-    let carrierName = liveFlight?.airlineName || (transportMode === 'taxi' ? 'Nexa Ground Fleet' : 'Nexa Air');
-
-    if (transportMode === 'flight' && liveFlight) {
-      try {
-        const execution = await functions.createExecution(
-          appwriteConfig.functionId,
-          JSON.stringify({
-            action: 'create_order',
-            offerId: liveFlight.offerId,
-            paymentReference: response.reference,
-            passenger: {
-              first_name: firstName,
-              last_name: lastName,
-              email: formData.email,
-              phone_number: formData.phoneNumber,
-              born_on: formData.dateOfBirth,
-              gender: formData.gender,
-            },
-          })
-        );
-
-        const bookingResponse = JSON.parse(execution.responseBody);
-        if (bookingResponse.success && bookingResponse.data) {
-          realBookingId = bookingResponse.data.booking_reference || bookingResponse.data.id || response.reference;
-        }
-      } catch (funcErr) {
-        console.warn("Function execution warning, falling back to payment ref:", funcErr);
-      }
-    } else if (transportMode === 'taxi') {
-      realBookingId = `TAXI-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    }
-
-    // Single Atomic Update to your Main AI Trip Document
-  // Single Atomic Update to your Main AI Trip Document
-if (id) {
-  await database.updateDocument(
-    appwriteConfig.databaseId,
-    appwriteConfig.tripCollectionId,
-    id,
-    {
-      bookingStatus: 'confirmed',
-      paymentStatus: 'successful', // 👈 Fixed: must be 'successful', not 'paid'
-      paymentAmount: finalGrandTotal,
-      amount: finalGrandTotal,
-      paystackRef: response.reference,
-      BookingID: realBookingId,    // 👈 Fixed: capitalized 'B' to match Appwrite schema
-      passengerName: formData.fullName,
-      transportMode: transportMode || 'flight',
-      destination: formData.destination,
-      departureDate: formData.departureDate,
-      carrier: carrierName,
-      passengers: JSON.stringify([
-        {
-          given_name: firstName,
-          family_name: lastName,
-          email: formData.email,
-          phone: formData.phoneNumber,
-        },
-      ]),
-    }
-  );
-}
-
-    navigate(`/booking-success/${realBookingId}`, {
-      state: {
-        price: finalGrandTotal,
-        mode: transportMode,
-        passengerName: formData.fullName,
-        destination: formData.destination,
-        bookingId: realBookingId,
-      },
-    });
-  } catch (backendError: any) {
-    console.error('Payment finalized but fulfillment failed:', backendError);
-    alert(`Payment received, but ticket update failed: ${backendError.message}`);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.fullName.trim() || !formData.email.trim() || !formData.phoneNumber.trim()) {
-      alert('Please complete all required passenger manifest fields.');
-      return;
-    }
-
-    if (!formData.dateOfBirth) {
-      alert('Date of Birth is required for passenger registration.');
-      return;
+    for (let i = 0; i < passengers.length; i++) {
+      const p = passengers[i];
+      if (!p.given_name.trim() || !p.family_name.trim() || !p.email.trim() || !p.phone.trim()) {
+        alert(`Please complete all required fields for Passenger #${i + 1}.`);
+        return;
+      }
+      if (!p.dateOfBirth) {
+        alert(`Date of Birth is required for Passenger #${i + 1}.`);
+        return;
+      }
     }
 
     if (!window.PaystackPop) {
@@ -397,14 +420,14 @@ if (id) {
     try {
       const handler = window.PaystackPop.setup({
         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-        email: formData.email,
+        email: passengers[0].email,
         amount: totalAmountInKobo,
         currency: 'NGN',
         ref: `NEXA_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
         metadata: {
           custom_fields: [
-            { display_name: 'Passenger Name', variable_name: 'passenger_name', value: formData.fullName },
-            { display_name: 'Passenger Phone', variable_name: 'passenger_phone', value: formData.phoneNumber },
+            { display_name: 'Primary Passenger', variable_name: 'passenger_name', value: `${passengers[0].given_name} ${passengers[0].family_name}` },
+            { display_name: 'Total Travelers', variable_name: 'total_passengers', value: passengers.length },
             { display_name: 'Transit Protocol', variable_name: 'transit_protocol', value: transportMode || 'unknown' },
           ],
         },
@@ -590,82 +613,116 @@ if (id) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase font-mono">Full Legal Name</label>
-                <input 
-                  type="text" 
-                  name="fullName"
-                  required
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  placeholder="John Doe"
-                  className="w-full text-xs font-medium px-3.5 py-3 bg-slate-50/50 border border-slate-200/70 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-all text-slate-800"
-                />
+            {/* Dynamic Multi-Passenger Section */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-slate-500">
+                  Passenger Manifest List ({passengers.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={addPassengerField}
+                  className="text-xs font-mono font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer flex items-center gap-1"
+                >
+                  <span>+ Add Passenger</span>
+                </button>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase font-mono">Digital Mail Coordinates</label>
-                <input 
-                  type="email" 
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="johndoe@nexa.io"
-                  className="w-full text-xs font-medium px-3.5 py-3 bg-slate-50/50 border border-slate-200/70 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-all text-slate-800"
-                />
-              </div>
-            </div>
+              {passengers.map((p, index) => (
+                <div key={index} className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-4 relative">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                      Passenger #{index + 1} {index === 0 && '(Primary)'}
+                    </span>
+                    {passengers.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removePassengerField(index)}
+                        className="text-slate-400 hover:text-red-500 text-xs font-mono cursor-pointer transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase font-mono">Telecom Link</label>
-                <input 
-                  type="tel" 
-                  name="phoneNumber"
-                  required
-                  placeholder="+234...."
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  className="w-full text-xs font-medium px-3.5 py-3 bg-slate-50/50 border border-slate-200/70 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-all text-slate-800 font-mono"
-                />
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold tracking-widest text-slate-400 uppercase font-mono">Given Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={p.given_name}
+                        onChange={(e) => handlePassengerChange(index, 'given_name', e.target.value)}
+                        placeholder="John"
+                        className="w-full text-xs font-medium px-3 py-2.5 bg-white border border-slate-200/70 rounded-lg focus:outline-none focus:border-slate-900 transition-all text-slate-800"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold tracking-widest text-slate-400 uppercase font-mono">Family Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={p.family_name}
+                        onChange={(e) => handlePassengerChange(index, 'family_name', e.target.value)}
+                        placeholder="Doe"
+                        className="w-full text-xs font-medium px-3 py-2.5 bg-white border border-slate-200/70 rounded-lg focus:outline-none focus:border-slate-900 transition-all text-slate-800"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase font-mono">Date of Birth</label>
-                <input 
-                  type="date" 
-                  name="dateOfBirth"
-                  required
-                  value={formData.dateOfBirth}
-                  onChange={handleInputChange}
-                  className="w-full text-xs font-medium px-3.5 py-3 bg-slate-50/50 border border-slate-200/70 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-all text-slate-800 font-mono text-center"
-                />
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold tracking-widest text-slate-400 uppercase font-mono">Email Address</label>
+                      <input 
+                        type="email" 
+                        required
+                        value={p.email}
+                        onChange={(e) => handlePassengerChange(index, 'email', e.target.value)}
+                        placeholder="john@nexa.io"
+                        className="w-full text-xs font-medium px-3 py-2.5 bg-white border border-slate-200/70 rounded-lg focus:outline-none focus:border-slate-900 transition-all text-slate-800"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold tracking-widest text-slate-400 uppercase font-mono">Phone Number</label>
+                      <input 
+                        type="tel" 
+                        required
+                        value={p.phone}
+                        onChange={(e) => handlePassengerChange(index, 'phone', e.target.value)}
+                        placeholder="+234..."
+                        className="w-full text-xs font-medium px-3 py-2.5 bg-white border border-slate-200/70 rounded-lg focus:outline-none focus:border-slate-900 transition-all text-slate-800 font-mono"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase font-mono">Gender Metric</label>
-                <div className="relative">
-                  <select 
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    className="w-full text-xs font-bold px-3.5 py-3 bg-slate-50/50 border border-slate-200/70 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-all text-slate-800 appearance-none font-mono cursor-pointer"
-                  >
-                    <option value="m">Male Protocol</option>
-                    <option value="f">Female Protocol</option>
-                  </select>
-                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold tracking-widest text-slate-400 uppercase font-mono">Date of Birth</label>
+                      <input 
+                        type="date" 
+                        required
+                        value={p.dateOfBirth || ''}
+                        onChange={(e) => handlePassengerChange(index, 'dateOfBirth', e.target.value)}
+                        className="w-full text-xs font-medium px-3 py-2.5 bg-white border border-slate-200/70 rounded-lg focus:outline-none focus:border-slate-900 transition-all text-slate-800 font-mono text-center"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold tracking-widest text-slate-400 uppercase font-mono">Gender Metric</label>
+                      <select 
+                        value={p.gender || 'm'}
+                        onChange={(e) => handlePassengerChange(index, 'gender', e.target.value as 'm' | 'f')}
+                        className="w-full text-xs font-bold px-3 py-2.5 bg-white border border-slate-200/70 rounded-lg focus:outline-none focus:border-slate-900 transition-all text-slate-800 font-mono cursor-pointer"
+                      >
+                        <option value="m">Male Protocol</option>
+                        <option value="f">Female Protocol</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pt-2">
               <label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase font-mono">Special Directives (Optional)</label>
               <textarea 
                 name="specialRequests"
@@ -735,7 +792,7 @@ if (id) {
 
             <div className="space-y-2.5 pt-1 text-[11px] font-medium">
               <div className="flex justify-between items-center text-slate-500">
-                <span>Calculated Tariff Base Rate</span>
+                <span>Calculated Tariff Base Rate ({passengers.length} traveler{passengers.length > 1 ? 's' : ''})</span>
                 <span className="font-mono font-bold text-slate-800">${finalFlightCost.toFixed(2)}</span>
               </div>
 

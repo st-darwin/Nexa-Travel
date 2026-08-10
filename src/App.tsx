@@ -14,7 +14,7 @@ import Archive, { loader as userArchiveloader } from "./sections/User/Archive";
 import Settings from "./sections/User/Settings";
 import MyItinerary, { Loader as myItineraryLoader } from "./sections/User/MyItinerary";
 import AIStrategist, { Loader as StrategistLoader } from "./sections/User/AIStrategist";
-import Chatbot from "./sections/User/Chatbot";
+import TripConciergeChat  from "./sections/User/Chatbot";
 import TelemetrySummary, { GetIdUsingParams as loader } from "./sections/User/TelemetrySummary";
 import TripBooking from "./sections/User/TripBooking";
 import BookingSuccess from './sections/User/BookingSuccess';
@@ -55,7 +55,7 @@ const router = createBrowserRouter(
         <Route path="archive" element={<Archive />} loader={userArchiveloader} />
         <Route path="settings" element={<Settings />} />
         <Route path="my-itinerary/:id" element={<MyItinerary />} loader={myItineraryLoader} />
-        <Route path="chatbot" element={<Chatbot />} />
+        <Route path="chatbot" element={<TripConciergeChat />}  action={createTripAction} />
         <Route path="telemetry/:id" element={<TelemetrySummary />} loader={loader} />
         <Route path="browse-recommendations" element={<BrowseRecommendations />} />
       </Route>
@@ -66,6 +66,9 @@ const router = createBrowserRouter(
       <Route path="/sign-in" element={<SignIn />} loader={signInLoader} />
     </>
   ),
+
+
+
   {
     basename: import.meta.env.BASE_URL, // 👈 Passes /Nexa-Travel/ to React Router automatically
   }

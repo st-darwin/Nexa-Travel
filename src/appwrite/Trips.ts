@@ -56,7 +56,6 @@ export const getUserTrips = async (userId: string, limit: number = 6, offset: nu
     return { trips: [], total: 0 };
   }
 };
-
 export const getUserTripById = async (tripId: string, userId: string) => {
   try {
     const trip = await database.getDocument(
@@ -65,7 +64,8 @@ export const getUserTripById = async (tripId: string, userId: string) => {
       tripId
     );
 
-    if (trip.userId !== userId) {
+    // Allow access if trip is anonymous or IDs match
+    if (trip.userId && trip.userId !== 'anonymous' && trip.userId !== userId) {
       console.warn("Unauthorized access attempt to trip:", tripId);
       return null;
     }
@@ -76,6 +76,7 @@ export const getUserTripById = async (tripId: string, userId: string) => {
     return null;
   }
 };
+
 
 export const finalizeTripById = async (tripId: string) => {
   try {

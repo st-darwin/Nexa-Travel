@@ -1,14 +1,12 @@
-import {type ActionFunctionArgs, data} from "react-router";
-
+import { type ActionFunctionArgs, data } from "react-router";
 import { parseMarkdownToJson } from "../../lib/utils";
-import { appwriteConfig , database } from "../../appwrite/client";
-import {ID} from "appwrite";
-
+import { appwriteConfig, database } from "../../appwrite/client";
+import { ID } from "appwrite";
 import { incrementUserTripCount } from "../../appwrite/Auth";
-let count = 0; // to keep track of how many times the action has been called, for analytics or other purposes   
+
+let count = 0; 
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-   
     const {
         country,
         numberOfDays,
@@ -19,14 +17,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         userId,
     } = await request.json();
 
-    const deepseekApiKey = import.meta.env.VITE_DEEPSEEK_API_KEY!;
-    const unsplashApiKey = import.meta.env.VITE_UNSPLASH_ACCESS_KEY!;
+    // Enforce valid user session to prevent saving trips as 'anonymous'
+    if (!userId || userId === 'anonymous') {
+        return data({ error: "User session not found. Please log in to generate and save trips." }, { status: 401 });
+    }
 
+    // Fallback safely for server-side execution if process.env is used by your adapter
+    const deepseekApiKey = import.meta.env.VITE_DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
+    const unsplashApiKey = import.meta.env.VITE_UNSPLASH_ACCESS_KEY || process.env.VITE_UNSPLASH_ACCESS_KEY;
 
-    // collects the data form the fetcher.submit 
-    // and its applied to the prompt.
+    if (!deepseekApiKey) {
+        throw new Error("Missing DeepSeek/OpenRouter API Key on the server.");
+    }
+
     try {
-   const prompt = `Generate a ${numberOfDays}-day travel itinerary for ${country} based on the following user information:
+        const prompt = `Generate a ${numberOfDays}-day travel itinerary for ${country} based on the following user information:
         Budget: '${budget}'
         Interests: '${interests}'
         TravelStyle: '${travelStyle}'
@@ -40,7 +45,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         "budget": "${budget}",
         "travelStyle": "${travelStyle}",
         "country": "${country}",
-        "interests": ${interests},
+        "interests": "${interests}",
         "groupType": "${groupType}",
         "bestTimeToVisit": [
           '🌸 Season (from month to month): reason to visit',
@@ -73,18 +78,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           }
         ]
     }`;
-        
-    if (!navigator.onLine) {
-    throw new Error("You appear to be offline. Check your internet connection.");
-}
 
-    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${deepseekApiKey}`,
                 "Accept": "application/json",
-
             },
             body: JSON.stringify({
                 model: "anthropic/claude-3-haiku", 
@@ -95,7 +95,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                     },
                     { role: "user", content: prompt }
                 ],
-                // Helps ensure the AI doesn't yap before giving the JSON
                 response_format: { type: 'json_object' }, 
                 stream: false,
                 max_tokens: 4000,
@@ -104,17 +103,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
         if (!aiResponse.ok) {
             const errorData = await aiResponse.json();
-            throw new Error(`DeepSeek API Error: ${errorData.error?.message || aiResponse.statusText}`);
+            throw new Error(`OpenRouter API Error: ${errorData.error?.message || aiResponse.statusText}`);
         }
 
         const aiData = await aiResponse.json();
-        // collect the first cchoce or whatever
         const rawText = aiData.choices[0].message.content;
 
         count += 1;
 
-        // Since DeepSeek is better at clean JSON, we try parsing directly, 
-        // but keep your utility as a fallback.
         let trip;
         try {
             trip = JSON.parse(rawText);
@@ -122,13 +118,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             trip = parseMarkdownToJson(rawText);
         }
 
-        // --- REST OF YOUR LOGIC (UNSPLASH & APPWRITE) ---
-        const imageResponse = await fetch(
-            `https://api.unsplash.com/search/photos?query=${country} ${interests} ${travelStyle}&client_id=${unsplashApiKey}`
-        );
-
-        const imageUrls = (await imageResponse.json()).results.slice(0, 3)
-            .map((result: any) => result.urls?.regular || null);
+        // --- SAFE UNSPLASH IMAGE FETCHING ---
+        let imageUrls: string[] = [];
+        try {
+            const imageResponse = await fetch(
+                `https://api.unsplash.com/search/photos?query=${encodeURIComponent(country + ' ' + interests + ' ' + travelStyle)}&client_id=${unsplashApiKey}`
+            );
+            if (imageResponse.ok) {
+                const imageJson = await imageResponse.json();
+                imageUrls = imageJson.results ? imageJson.results.slice(0, 3).map((result: any) => result.urls?.regular || null) : [];
+            }
+        } catch (imgErr) {
+            console.warn("Unsplash fetch skipped due to network limitation:", imgErr);
+        }
 
         const result = await database.createDocument(
             appwriteConfig.databaseId,
@@ -136,26 +138,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             ID.unique(),
             {
                 tripDetail: JSON.stringify(trip),
-                
-                imgUrls : imageUrls || [],
-                userId : userId || 'anonymous', 
-             
-                
+                imgUrls: imageUrls || [],
+                userId: userId, 
             }
         );
-        // if the useid is there and is not equalto the anonymous do this ..
 
-         if (userId && userId !== 'anonymous') {
         await incrementUserTripCount(userId);
-    }
-       // the routing id will be the id of the document created in the database, and then we can use that id to fetch the trip details in the trip details page.
-        return data({ id: result.$id });
-        
 
-    } catch (e) {
+        return data({ id: result.$id });
+
+    } catch (e: any) {
         console.error('Error generating travel plan: ', e);
+        return data({ error: e.message }, { status: 500 });
     }
-}
-// !: AI creates the trip 
-// 2: Document was created in the database with the trip details and image urls
-// the id was returned to the client and then used to navigate to the trip details page.
+};
