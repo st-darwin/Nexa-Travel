@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePaystackPayment } from 'react-paystack';
-import { createDuffelOrder } from '../../appwrite/Trips';
+import { createDuffelOrder, createFlightBooking } from '../../appwrite/Trips';
 
 export const Checkout: React.FC = () => {
   const location = useLocation();
@@ -59,15 +59,29 @@ export const Checkout: React.FC = () => {
     initializePayment({
       onSuccess: async (response: { reference: string }) => {
         try {
-          // 1. Issue the flight order via Duffel/Appwrite backend
+          // 1. Issue the flight order via Duffel/Appwrite function
           const orderResult = await createDuffelOrder(flight.offerId, passenger);
-          
           const pnr = orderResult?.bookingReference || orderResult?.id || orderResult?.reference || response.reference;
 
-          // 2. (Optional Integration Hook) If you have a function to persist booked trips to your database:
-          // await saveTripToDatabase({ bookingId: pnr, flight, passenger, paystackRef: response.reference });
+          const slice = flight.slices?.[0];
+          const segment = slice?.segments?.[0];
 
-          // 3. Navigate to Ticket View with complete state payload
+          // 2. Save the confirmed booking/trip directly to your Appwrite normalCollection database
+          await createFlightBooking({
+            userId: 'anonymous', // Update this if you have user authentication state available
+            airline: flight.airlineName || 'Airlines',
+            flightNumber: segment?.marketing_carrier_flight_number || segment?.id || 'NX-FL',
+            departureAirport: searchParams?.from || segment?.origin?.iata_code || 'LOS',
+            arrivalAirport: searchParams?.to || segment?.destination?.iata_code || 'ABV',
+            flightDate: searchParams?.date || new Date().toISOString().split('T')[0],
+            seatClass: 'Economy',
+            passengerName: `${passenger.first_name} ${passenger.last_name}`,
+            passengerEmail: passenger.email,
+            ticketPrice: `$${flight.totalPriceToPay.toFixed(2)}`,
+            paymentStatus: 'successful',
+            paystackRef: response.reference,
+          });
+
           navigate(`/Home/ticket-view/${pnr}`, {
             state: {
               booking: orderResult,
@@ -78,7 +92,7 @@ export const Checkout: React.FC = () => {
             },
           });
         } catch (err: any) {
-          alert(err.message || "Payment succeeded, but ticket issuance failed. Contact support.");
+          alert(err.message || "Payment succeeded, but ticket issuance or database logging failed. Contact support.");
           setLoading(false);
         }
       },
