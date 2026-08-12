@@ -19,6 +19,7 @@ import TelemetrySummary, { GetIdUsingParams as loader } from "./sections/User/Te
 import TripBooking from "./sections/User/TripBooking";
 import BookingSuccess from './sections/User/BookingSuccess';
 import BrowseRecommendations from "./sections/User/BrowseRecommendations";
+import NormalTrip from "./sections/User/NormalTrip";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -58,6 +59,7 @@ const router = createBrowserRouter(
         <Route path="chatbot" element={<TripConciergeChat />}  action={createTripAction} />
         <Route path="telemetry/:id" element={<TelemetrySummary />} loader={loader} />
         <Route path="browse-recommendations" element={<BrowseRecommendations />} />
+        <Route path= "normal-trip" element={<NormalTrip/>} />
       </Route>
 
       <Route path="/booking-success/:bookingId" element={<BookingSuccess />} />
