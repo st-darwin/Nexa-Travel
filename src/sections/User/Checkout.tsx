@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { usePaystackPayment } from 'react-paystack';
 import { createDuffelOrder } from '../../appwrite/Trips';
 
 export const Checkout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { flight } = location.state || {};
+  const { flight, searchParams } = location.state || {};
 
   const [loading, setLoading] = useState(false);
   const [passenger, setPassenger] = useState({
@@ -33,19 +34,58 @@ export const Checkout: React.FC = () => {
     setPassenger((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckoutSubmit = async (e: React.FormEvent) => {
+  const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_your_paystack_key_here";
+  const amountInKobo = Math.round(flight.totalPriceToPay * 1500 * 100);
+
+  const config = {
+    reference: 'NX_' + Math.floor((Math.random() * 1000000000) + 1),
+    email: passenger.email,
+    amount: amountInKobo,
+    publicKey: paystackPublicKey,
+    currency: "NGN",
+  };
+
+  const initializePayment = usePaystackPayment(config);
+
+  const handlePaystackPayment = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!passenger.email || !passenger.first_name || !passenger.last_name) {
+      alert("Please fill in all required passenger details.");
+      return;
+    }
+
     setLoading(true);
 
-    try {
-      const orderResult = await createDuffelOrder(flight.offerId, passenger);
-      alert(`Booking Confirmed! PNR Reference: ${orderResult.bookingReference}`);
-      navigate('/Home');
-    } catch (err: any) {
-      alert(err.message || "Checkout failed");
-    } finally {
-      setLoading(false);
-    }
+    initializePayment({
+      onSuccess: async (response: { reference: string }) => {
+        try {
+          // 1. Issue the flight order via Duffel/Appwrite backend
+          const orderResult = await createDuffelOrder(flight.offerId, passenger);
+          
+          const pnr = orderResult?.bookingReference || orderResult?.id || orderResult?.reference || response.reference;
+
+          // 2. (Optional Integration Hook) If you have a function to persist booked trips to your database:
+          // await saveTripToDatabase({ bookingId: pnr, flight, passenger, paystackRef: response.reference });
+
+          // 3. Navigate to Ticket View with complete state payload
+          navigate(`/Home/ticket-view/${pnr}`, {
+            state: {
+              booking: orderResult,
+              flight,
+              passenger,
+              paystackRef: response.reference,
+              searchParams,
+            },
+          });
+        } catch (err: any) {
+          alert(err.message || "Payment succeeded, but ticket issuance failed. Contact support.");
+          setLoading(false);
+        }
+      },
+      onClose: () => {
+        setLoading(false);
+      },
+    });
   };
 
   return (
@@ -66,7 +106,7 @@ export const Checkout: React.FC = () => {
         </div>
       </div>
 
-      <form onSubmit={handleCheckoutSubmit} className="space-y-4">
+      <form onSubmit={handlePaystackPayment} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wide mb-1.5">First Name (As on ID)</label>
@@ -138,10 +178,10 @@ export const Checkout: React.FC = () => {
           {loading ? (
             <>
               <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Issuing Ticket Order...</span>
+              <span>Processing Payment & Issuing Ticket...</span>
             </>
           ) : (
-            'Confirm & Issue Ticket'
+            `Pay $${flight.totalPriceToPay.toFixed(2)} & Issue Ticket`
           )}
         </button>
       </form>

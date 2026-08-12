@@ -21,6 +21,7 @@ import BookingSuccess from './sections/User/BookingSuccess';
 import BrowseRecommendations from "./sections/User/BrowseRecommendations";
 import FlightSearch from "./sections/User/FlightSearch";
 import Checkout from "./sections/User/Checkout";
+import TicketView from "./sections/User/TicketView";
 
 
 const router = createBrowserRouter(
@@ -63,6 +64,7 @@ const router = createBrowserRouter(
         <Route path="browse-recommendations" element={<BrowseRecommendations />} />
         <Route path="flight-search" element={<FlightSearch />} />
         <Route path="checkout" element={<Checkout />} />
+        <Route path="ticket-view/:bookingId" element={<TicketView />} />
       </Route>
 
       <Route path="/booking-success/:bookingId" element={<BookingSuccess />} />
