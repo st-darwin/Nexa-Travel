@@ -82,6 +82,7 @@ export const Checkout: React.FC = () => {
             paystackRef: response.reference,
           });
 
+          
           navigate(`/Home/ticket-view/${pnr}`, {
             state: {
               booking: orderResult,

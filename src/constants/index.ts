@@ -81,7 +81,7 @@ export const UserSideBarItems =[
   name: 'Real time Flight search ',
   href: 'flight-search',
   label:"Real time Flight search ",
-  icon: "/assets/icons/browse.svg"
+  icon: "/assets/icons/realFlight.svg"
 
 }
 
