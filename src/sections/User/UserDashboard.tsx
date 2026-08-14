@@ -4,6 +4,7 @@ import {
   useSearchParams, 
   type LoaderFunctionArgs 
 } from "react-router-dom";
+import { useState } from "react";
 import UserHeader from "../../components/UserHeader";
 import { account } from "../../appwrite/client";
 import { getUserTrips, getUserNormalTrips } from "../../appwrite/Trips";
@@ -12,6 +13,7 @@ import { AIBookingRateCard } from "./AIBookingRateCard";
 import { TripWeather } from "../../components/TripWeather";
 import WeatherRecommendations from "../../components/WeatherRecommendations";
 import { GetRecommendedTrips } from "../../appwrite/recommendationsBooking";
+import { FlightDetailsModal } from "../../components/FlightDetailsModal";
 
 export interface DashboardTrip {
   id: string;
@@ -36,6 +38,7 @@ export interface DashboardLoaderData {
   totalPages: number;
   recdoc: any | null;
   normaltripCount: number;
+  currentLiveFlight: any | null;
 }
 
 export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Promise<DashboardLoaderData> => {
@@ -47,14 +50,13 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
   try {
     const user = await account.get();
     
-    // Fetch custom trips and normal trips
     const { trips, total } = await getUserTrips(user.$id, limit, offset);
-    
-    // Explicitly grab the .total property returned by getUserNormalTrips
     const normalTripsResult = await getUserNormalTrips(user.$id, limit, offset);
     const normaltripCount = normalTripsResult?.total ?? 0;
     
-    // Safely fetch recommended trips without crashing the loader if empty/not found
+    const normalTripsDocs = normalTripsResult?.trips || [];
+    const currentLiveFlight = normalTripsDocs.length > 0 ? normalTripsDocs[0] : null;
+    
     let recdoc = null;
     try {
       recdoc = await GetRecommendedTrips(user.$id, limit, offset);
@@ -112,6 +114,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       totalPages,
       recdoc: recdoc || null,
       normaltripCount,
+      currentLiveFlight,
     };
   } catch (error) {
     console.error("Nexa OS Loader Error:", error);
@@ -125,6 +128,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       totalPages: 1,
       recdoc: null,
       normaltripCount: 0,
+      currentLiveFlight: null,
     };
   }
 };
@@ -133,6 +137,10 @@ const UserDashboard = () => {
   const data = useLoaderData() as DashboardLoaderData;
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
+  
+  // State for Flight Details Modal
+  const [selectedFlight, setSelectedFlight] = useState<any | null>(null);
+  const [isFlightModalOpen, setIsFlightModalOpen] = useState(false);
   
   const sampleDestinations = [
     { id: "1", name: "Santorini", country: "Greece", temp: 26, condition: "Sunny & Clear", tag: "Beach & Views" },
@@ -148,6 +156,11 @@ const UserDashboard = () => {
     });
   };
 
+  const openFlightModal = (flightData: any) => {
+    setSelectedFlight(flightData);
+    setIsFlightModalOpen(true);
+  };
+
   return (
     <div className="w-full min-h-screen bg-zinc-50/50 p-6 md:p-10 space-y-8 antialiased selection:bg-zinc-900 selection:text-white">
       {/* Header */}
@@ -156,7 +169,7 @@ const UserDashboard = () => {
         description="Your world, organized and synchronized in real-time."
       />
 
-      {/* Stats Section - Updated to 3 columns layout */}
+      {/* Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Stat Card 1: Generated Itineraries */}
         <div
@@ -232,6 +245,97 @@ const UserDashboard = () => {
 
       {/* AI Booking Rate Card */}
       <AIBookingRateCard />
+
+      {/* Real-Time Flight Telemetry Card */}
+      {data.currentLiveFlight && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400">
+              Active Flight Telemetry
+            </h3>
+            <span className="text-[10px] font-mono text-sky-500 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-sky-500" />
+              </span>
+              Live Sync
+            </span>
+          </div>
+
+          <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="bg-sky-50 border border-sky-200/60 text-sky-700 text-[9px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-md">
+                  {data.currentLiveFlight.airline || "Commercial Flight"}
+                </span>
+                <span className="text-xs font-mono font-bold text-zinc-500">
+                  Flight #{data.currentLiveFlight.flightNumber || "N/A"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-zinc-400 block">Origin</span>
+                  <span className="text-base font-bold text-zinc-900 font-mono">
+                    {data.currentLiveFlight.departureAirport || data.currentLiveFlight.country || "Origin Hub"}
+                  </span>
+                </div>
+                <div className="text-zinc-300 font-mono">➔</div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-zinc-400 block">Destination</span>
+                  <span className="text-base font-bold text-zinc-900 font-mono">
+                    {data.currentLiveFlight.arrivalAirport || data.currentLiveFlight.name || "Arrival Hub"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-xs font-mono text-zinc-500 flex items-center gap-3">
+                <span>Passenger: <strong className="text-zinc-800">{data.currentLiveFlight.passengerName || data.currentLiveFlight.passengerEmail || "Verified Traveler"}</strong></span>
+                <span>•</span>
+                <span>Class: <strong className="text-zinc-800">{data.currentLiveFlight.seatClass || "Economy"}</strong></span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between lg:justify-end gap-4 border-t lg:border-t-0 pt-4 lg:pt-0 border-zinc-100">
+              <div className="text-left lg:text-right font-mono">
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block">
+                  Status
+                </span>
+                <span className="text-xs font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-200/60 inline-block mt-0.5">
+                  {data.currentLiveFlight.paymentStatus || "Confirmed"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openFlightModal(data.currentLiveFlight)}
+                  className="px-4 py-2.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-700 font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-2"
+                >
+                  <span>Flight Info</span>
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate(
+                      `/booking-success/${
+                        data.currentLiveFlight.bookingID ||
+                        data.currentLiveFlight.BookingID ||
+                        data.currentLiveFlight.$id
+                      }`
+                    )
+                  }
+                  className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-2 group/btn"
+                >
+                  <span>View Ticket</span>
+                  <svg className="w-4 h-4 text-sky-400 transition-transform group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Active Journey Manifest Banner */}
       {data.currentBookedTrip && (
@@ -331,7 +435,7 @@ const UserDashboard = () => {
         </div>
       )}
 
-      {/* Active Weather forecast */}
+      {/* Active Weather Forecast */}
       <TripWeather destinationCity={data.currentBookedTrip?.location || ''} />
     
       {/* Recent Recommendation Booking Card */}
@@ -534,6 +638,13 @@ const UserDashboard = () => {
           </>
         )}
       </div>
+
+      {/* Flight Details Modal / Drawer Component */}
+      <FlightDetailsModal 
+        isOpen={isFlightModalOpen} 
+        onClose={() => setIsFlightModalOpen(false)} 
+        flight={selectedFlight} 
+      />
     </div>
   );
 };
