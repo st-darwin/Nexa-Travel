@@ -314,23 +314,39 @@ const UserDashboard = () => {
                   <span>Flight Info</span>
                 </button>
 
-                <button
-                  onClick={() =>
-                    navigate(
-                      `/booking-success/${
-                        data.currentLiveFlight.bookingID ||
-                        data.currentLiveFlight.BookingID ||
-                        data.currentLiveFlight.$id
-                      }`
-                    )
-                  }
-                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 group/btn"
-                >
-                  <span>View Ticket</span>
-                  <svg className="w-4 h-4 text-sky-400 transition-transform group-hover/btn:translate-x-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
-                  </svg>
-                </button>
+              <button
+  onClick={() =>
+    navigate(
+      `/Home/ticket-view/${
+        data.currentLiveFlight.bookingId ||
+        data.currentLiveFlight.$id
+      }`,
+      {
+        state: {
+          booking: data.currentLiveFlight,
+          flight: data.currentLiveFlight, // pass the flight record directly
+          passenger: {
+            first_name: data.currentLiveFlight.passengerName?.split(' ')[0] || '',
+            last_name: data.currentLiveFlight.passengerName?.split(' ').slice(1).join(' ') || '',
+            email: data.currentLiveFlight.passengerEmail || '',
+          },
+          paystackRef: data.currentLiveFlight.paystackRef,
+          searchParams: {
+            from: data.currentLiveFlight.departureAirport,
+            to: data.currentLiveFlight.arrivalAirport,
+            date: data.currentLiveFlight.flightDate,
+          },
+        },
+      }
+    )
+  }
+  className="flex-1 sm:flex-initial px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 group/btn"
+>
+  <span>View Ticket</span>
+  <svg className="w-4 h-4 text-sky-400 transition-transform group-hover/btn:translate-x-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
+  </svg>
+</button>
               </div>
             </div>
           </div>

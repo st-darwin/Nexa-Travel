@@ -61,8 +61,8 @@ export const Checkout: React.FC = () => {
         try {
           // 1. Issue the flight order via Duffel/Appwrite function
           const orderResult = await createDuffelOrder(flight.offerId, passenger);
-          const pnr = orderResult?.bookingReference || orderResult?.id || orderResult?.reference || response.reference;
-
+          const bookingId = orderResult?.bookingReference || orderResult?.id || orderResult?.reference || response.reference;
+        
           const slice = flight.slices?.[0];
           const segment = slice?.segments?.[0];
 
@@ -80,10 +80,15 @@ export const Checkout: React.FC = () => {
             ticketPrice: `$${flight.totalPriceToPay.toFixed(2)}`,
             paymentStatus: 'successful',
             paystackRef: response.reference,
+            bookingId: bookingId,
+            departureTime: segment?.departing_at || new Date().toISOString(),
+            arrivalTime: segment?.arriving_at || new Date().toISOString(),
+            gender: passenger.gender,
+            DOB: passenger.born_on
           });
 
           
-          navigate(`/Home/ticket-view/${pnr}`, {
+          navigate(`/Home/ticket-view/${bookingId}`, {
             state: {
               booking: orderResult,
               flight,

@@ -305,12 +305,20 @@ export const createFlightBooking = async (bookingData: {
   departureAirport: string;
   arrivalAirport: string;
   flightDate: string;
+  departureTime?: string;
+  arrivalTime?: string;
   seatClass: string;
   passengerName: string;
   passengerEmail: string;
+  passengerGender?: string;
+  passengerPhone?: string;
   ticketPrice: string;
   paymentStatus?: string;
   paystackRef?: string;
+  bookingId?: string;
+  gender?: string;
+  DOB?: string;
+  
 }) => {
   try {
     let activeUserId = bookingData.userId;

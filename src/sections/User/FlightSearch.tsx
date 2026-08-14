@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchLiveFlights } from '../../appwrite/Trips';
+import UserHeader from '../../components/UserHeader';
 
 export const FlightSearch: React.FC = () => {
   const navigate = useNavigate();
@@ -50,13 +51,14 @@ export const FlightSearch: React.FC = () => {
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 font-sans py-6 px-4">
+      {/* Header */}
+      <UserHeader
+        title="Live Flight Search Engine"
+        description="Query global airline inventories instantly."
+      />
+
       {/* Search Header Card */}
       <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/90 rounded-[2.5rem] shadow-sm p-6 sm:p-8">
-        <div className="mb-5 border-b border-slate-100 pb-4">
-          <h2 className="text-sm font-bold text-black uppercase tracking-wider">Live Flight Search Engine</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Query global airline inventories instantly.</p>
-        </div>
-
         <form onSubmit={handleSearchSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
