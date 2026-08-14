@@ -41,14 +41,19 @@ export const UserSideBarItems =[
 
   },
 
-
   {
-    id :3 ,
-    label : "Settings",
-    icon: "/assets/icons/settings.svg",
-    href: "settings"
-      
-  },
+  id: 3,
+  name: 'Real time Flight search ',
+  href: 'flight-search',
+  label:"Real time Flight search ",
+  icon: "/assets/icons/realFlight.svg"
+
+}
+
+,
+
+
+
 
   {
     id : 4,
@@ -76,15 +81,14 @@ export const UserSideBarItems =[
   icon: "/assets/icons/browse.svg"
 
 },
-{
-  id: 7,
-  name: 'Real time Flight search ',
-  href: 'flight-search',
-  label:"Real time Flight search ",
-  icon: "/assets/icons/realFlight.svg"
 
-}
-
+  {
+    id :7 ,
+    label : "Settings",
+    icon: "/assets/icons/settings.svg",
+    href: "settings"
+      
+  }
 
  
 
