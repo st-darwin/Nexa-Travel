@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface FlightDetailsModalProps {
   isOpen: boolean;
@@ -7,7 +8,14 @@ interface FlightDetailsModalProps {
 }
 
 export const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, onClose, flight }) => {
+  const navigate = useNavigate();
+
   if (!isOpen || !flight) return null;
+
+  const handleViewAllFlights = () => {
+    onClose();
+    navigate("/flight-details"); // Adjust this route to match your routing structure for the archive
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-xs animate-fadeIn">
@@ -86,7 +94,15 @@ export const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, 
         </div>
 
         {/* Footer actions */}
-        <div className="pt-2 flex items-center justify-end gap-3">
+        <div className="pt-2 flex items-center justify-between gap-3">
+          <button
+            onClick={handleViewAllFlights}
+            className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-mono text-xs font-bold uppercase rounded-xl transition-all cursor-pointer flex items-center gap-2"
+          >
+            <span>View All Flights Archive</span>
+            <span>➔</span>
+          </button>
+
           <button
             onClick={onClose}
             className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-mono text-xs font-bold uppercase rounded-xl transition-all cursor-pointer"
