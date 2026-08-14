@@ -246,7 +246,10 @@ export const getUserNormalTrips = async (userId: string, limit: number = 6, offs
       appwriteConfig.databaseId,
       appwriteConfig.normalCollectionID,
       [
-        Query.equal("userId", userId),
+        Query.or([
+          Query.equal("userId", userId),
+          Query.equal("userId", "anonymous")
+        ]),
         Query.orderDesc("$createdAt"),
         Query.limit(limit),
         Query.offset(offset),

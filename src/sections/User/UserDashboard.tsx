@@ -6,7 +6,7 @@ import {
 } from "react-router-dom";
 import UserHeader from "../../components/UserHeader";
 import { account } from "../../appwrite/client";
-import { getUserTrips } from "../../appwrite/Trips";
+import { getUserTrips, getUserNormalTrips } from "../../appwrite/Trips";
 import { parseTripData } from "../../lib/utils";
 import { AIBookingRateCard } from "./AIBookingRateCard";
 import { TripWeather } from "../../components/TripWeather";
@@ -35,6 +35,7 @@ export interface DashboardLoaderData {
   currentPage: number;
   totalPages: number;
   recdoc: any | null;
+  normaltripCount: number;
 }
 
 export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Promise<DashboardLoaderData> => {
@@ -46,15 +47,18 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
   try {
     const user = await account.get();
     
-    // Fetch paginated trips alongside total user stats
+    // Fetch custom trips and normal trips
     const { trips, total } = await getUserTrips(user.$id, limit, offset);
+    
+    // Explicitly grab the .total property returned by getUserNormalTrips
+    const normalTripsResult = await getUserNormalTrips(user.$id, limit, offset);
+    const normaltripCount = normalTripsResult?.total ?? 0;
     
     // Safely fetch recommended trips without crashing the loader if empty/not found
     let recdoc = null;
     try {
       recdoc = await GetRecommendedTrips(user.$id, limit, offset);
     } catch (recError) {
-      // Expected if user has no curated recommendations yet
       recdoc = null;
     }
 
@@ -65,7 +69,6 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
           ? parsed.location.city || "Global"
           : parsed?.location || raw.destination || "Destination Unknown";
 
-      // Robust booked check covering varied Appwrite schemas
       const isBooked =
         raw.isBooked === true ||
         raw.bookingStatus === "confirmed" ||
@@ -76,7 +79,6 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       const rawTags = [parsed?.travelStyle, ...(Array.isArray(parsed?.interests) ? parsed.interests : [parsed?.interests])];
       const normalizedTags = rawTags.filter(Boolean) as string[];
 
-      // Support varying case variations for Appwrite fields
       const actualPaidAmount = raw.amount || raw.paymentAmount || raw.totalPrice || null;
       const resolvedBookingId = raw.bookingID || raw.BookingID || raw.bookingId || raw.paystackRef || raw.$id;
 
@@ -96,11 +98,8 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       };
     });
 
-    // Locate the primary booked trip for the Active Journey banner
     const currentBookedTrip = mappedTrips.find((trip) => trip.isBooked) || null;
     const totalPages = Math.ceil(total / limit) || 1;
-
-    // Filter confirmed count
     const confirmedCount = mappedTrips.filter((t) => t.isBooked).length;
 
     return {
@@ -112,6 +111,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       currentPage: page,
       totalPages,
       recdoc: recdoc || null,
+      normaltripCount,
     };
   } catch (error) {
     console.error("Nexa OS Loader Error:", error);
@@ -124,6 +124,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       currentPage: 1,
       totalPages: 1,
       recdoc: null,
+      normaltripCount: 0,
     };
   }
 };
@@ -155,8 +156,8 @@ const UserDashboard = () => {
         description="Your world, organized and synchronized in real-time."
       />
 
-      {/* Stats Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Stats Section - Updated to 3 columns layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Stat Card 1: Generated Itineraries */}
         <div
           onClick={() => navigate("archive")}
@@ -182,7 +183,7 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        {/* Stat Card 2: Booked Trips */}
+        {/* Stat Card 2: Confirmed Bookings */}
         <div className="bg-white border border-zinc-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">
@@ -200,6 +201,28 @@ const UserDashboard = () => {
           <div className="w-10 h-10 bg-emerald-50 border border-emerald-200/60 rounded-xl flex items-center justify-center text-emerald-600">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Stat Card 3: Normal Flights */}
+        <div className="bg-white border border-zinc-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">
+              Normal Flights
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold font-mono text-sky-600 tracking-tight">
+                {data.normaltripCount}
+              </span>
+              <span className="text-[10px] text-sky-600/80 font-mono font-medium">
+                flights booked 
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 bg-sky-50 border border-sky-200/60 rounded-xl flex items-center justify-center text-sky-600">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
             </svg>
           </div>
         </div>
