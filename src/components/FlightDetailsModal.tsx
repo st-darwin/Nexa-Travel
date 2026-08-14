@@ -5,16 +5,22 @@ interface FlightDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   flight: any | null;
+  userId?: string;
 }
 
-export const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, onClose, flight }) => {
+export const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, onClose, flight, userId }) => {
   const navigate = useNavigate();
 
   if (!isOpen || !flight) return null;
 
   const handleViewAllFlights = () => {
     onClose();
-    navigate("/flight-details"); // Adjust this route to match your routing structure for the archive
+    // Navigate using the nested route structure under /Home/flight-details/:flightId
+    if (userId) {
+      navigate(`/Home/flight-details/${userId}`, { state: { user: { $id: userId } } });
+    } else {
+      navigate(`/Home/flight-details/archive`);
+    }
   };
 
   return (

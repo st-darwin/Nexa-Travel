@@ -22,6 +22,7 @@ import BrowseRecommendations from "./sections/User/BrowseRecommendations";
 import FlightSearch from "./sections/User/FlightSearch";
 import Checkout from "./sections/User/Checkout";
 import TicketView from "./sections/User/TicketView";
+import FlightDetails , {FlightArchiveLoader} from "./sections/User/FLightDetails"
 
 
 const router = createBrowserRouter(
@@ -65,6 +66,7 @@ const router = createBrowserRouter(
         <Route path="flight-search" element={<FlightSearch />} />
         <Route path="checkout" element={<Checkout />} />
         <Route path="ticket-view/:bookingId" element={<TicketView />} />
+        <Route path="flight-details/:flightId" element={<FlightDetails />} loader={FlightArchiveLoader} />
       </Route>
 
       <Route path="/booking-success/:bookingId" element={<BookingSuccess />} />
