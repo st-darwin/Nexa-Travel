@@ -1,6 +1,6 @@
 import { Query } from "appwrite";
 import { ID } from "appwrite";
-import { appwriteConfig, database, functions } from "./client";
+import { appwriteConfig, database, functions, account } from "./client";
 
 export const getALlTrips = async (limit: number, offset: number) => {
   const allTrips = await database.listDocuments(
@@ -66,7 +66,7 @@ export const getUserTripById = async (tripId: string, userId: string) => {
       tripId
     );
 
-    if (trip.userId && trip.userId !== 'anonymous' && trip.userId !== userId) {
+    if (trip.userId && trip.userId !== userId) {
       console.warn("Unauthorized access attempt to trip:", tripId);
       return null;
     }
@@ -183,7 +183,7 @@ export const StoreBookingid = async (tripId: string, bookingId: string) => {
 // --- NORMAL TRIP & MANUAL BOOKING METHODS ---
 
 export const createNormalTrip = async (tripData: {
-  userId: string;
+  userId?: string;
   country: string;
   numberOfDays: number;
   budget: string;
@@ -202,12 +202,29 @@ export const createNormalTrip = async (tripData: {
   paystackRef?: string;
 }) => {
   try {
+    let activeUserId = tripData.userId;
+
+    // Automatically fetch from account session if userId is missing or set to anonymous
+    if (!activeUserId || activeUserId === "anonymous") {
+      try {
+        const currentUser = await account.get();
+        activeUserId = currentUser?.$id;
+      } catch (sessionError) {
+        console.error("No active user session found:", sessionError);
+      }
+    }
+
+    if (!activeUserId || activeUserId === "anonymous") {
+      throw new Error("Authentication required: A valid user ID is needed to create bookings.");
+    }
+
     const response = await database.createDocument(
       appwriteConfig.databaseId,
       appwriteConfig.normalCollectionID,
       ID.unique(),
       {
         ...tripData,
+        userId: activeUserId,
         paymentStatus: tripData.paymentStatus || "pending",
       }
     );
@@ -226,7 +243,7 @@ export const getNormalTripById = async (tripId: string, userId: string) => {
       tripId
     );
 
-    if (trip.userId && trip.userId !== 'anonymous' && trip.userId !== userId) {
+    if (trip.userId && trip.userId !== userId) {
       console.warn("Unauthorized access attempt to normal trip:", tripId);
       return null;
     }
@@ -246,10 +263,7 @@ export const getUserNormalTrips = async (userId: string, limit: number = 6, offs
       appwriteConfig.databaseId,
       appwriteConfig.normalCollectionID,
       [
-        Query.or([
-          Query.equal("userId", userId),
-          Query.equal("userId", "anonymous")
-        ]),
+        Query.equal("userId", userId),
         Query.orderDesc("$createdAt"),
         Query.limit(limit),
         Query.offset(offset),
@@ -285,7 +299,7 @@ export const confirmNormalTripPayment = async (tripId: string, paystackRef: stri
 };
 
 export const createFlightBooking = async (bookingData: {
-  userId: string;
+  userId?: string;
   airline: string;
   flightNumber: string;
   departureAirport: string;
@@ -299,12 +313,28 @@ export const createFlightBooking = async (bookingData: {
   paystackRef?: string;
 }) => {
   try {
+    let activeUserId = bookingData.userId;
+
+    if (!activeUserId || activeUserId === "anonymous") {
+      try {
+        const currentUser = await account.get();
+        activeUserId = currentUser?.$id;
+      } catch (sessionError) {
+        console.error("No active user session found:", sessionError);
+      }
+    }
+
+    if (!activeUserId || activeUserId === "anonymous") {
+      throw new Error("Authentication required: A valid user ID is needed to book flights.");
+    }
+
     const response = await database.createDocument(
       appwriteConfig.databaseId,
       appwriteConfig.normalCollectionID,
       ID.unique(),
       {
         ...bookingData,
+        userId: activeUserId,
         paymentStatus: bookingData.paymentStatus || "pending",
       }
     );
