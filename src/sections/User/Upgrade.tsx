@@ -15,7 +15,7 @@ export default function UpgradePage() {
   // Modal state for viewing active plan
   const [showActivePlanModal, setShowActivePlanModal] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [checkingPlan, setCheckingPlan] = useState(false);
+
 
   // Fetch current user and profile on mount
   useEffect(() => {
@@ -90,7 +90,7 @@ const handleSuccess = async (reference: any) => {
           subscriptionType: selectedPlan,
           subscriptionExpiresAt: expiresAt.toISOString(),
           subscriptionStatus: "active",
-          isPro: true, // 🌟 Sets isPro to true upon successful payment
+          isPro: true, 
         });
         setUserProfile(updatedDoc);
       }

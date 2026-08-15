@@ -42,7 +42,7 @@ export const BookingSuccess = () => {
   const initialState = location.state as SuccessState | undefined;
 
   const [ticketState, setTicketState] = useState<SuccessState | null>(initialState || null);
-  const [loading, setLoading] = useState<boolean>(!initialState && !!bookingId);
+  const [loading, setLoading] = useState<boolean>(!initialState || !initialState.price || !initialState.destination);
   const [error, setError] = useState<string | null>(null);
 
   const [copied, setCopied] = useState(false);
@@ -76,95 +76,164 @@ export const BookingSuccess = () => {
   };
 
   useEffect(() => {
-    if (ticketState || !bookingId) return;
-
     const fetchTicketFromAppwrite = async () => {
       try {
         setLoading(true);
         setError(null);
 
+        let activeUser: any = null;
+        try {
+          activeUser = await account.get();
+        } catch (e) {
+          console.warn('No active session found for user ID lookup:', e);
+        }
+
         let doc: any = null;
 
-        // 1. Check Recommendation Bookings collection first (Static items)
-        try {
-          const recResponse = await database.listDocuments(
-            appwriteConfig.databaseId,
-            appwriteConfig.recommendationCollectionId,
-            [Query.equal('bookingID', bookingId)]
-          );
-          if (recResponse.documents.length > 0) doc = recResponse.documents[0];
-        } catch (err) {
-          console.warn('Query by recommendation bookingID failed:', err);
-        }
-
-        // 2. Query trip collection by paystackRef
-        if (!doc) {
+        // 1. If bookingId exists, try specific lookups (recommendation bookingID, paystackRef, BookingID, bookingID, direct document ID)
+        if (bookingId && bookingId !== 'undefined') {
           try {
-            const response = await database.listDocuments(
+            const recResponse = await database.listDocuments(
               appwriteConfig.databaseId,
-              appwriteConfig.tripCollectionId,
-              [Query.equal('paystackRef', bookingId)]
+              appwriteConfig.recommendationCollectionId,
+              [Query.equal('bookingID', bookingId)]
             );
-            if (response.documents.length > 0) doc = response.documents[0];
+            if (recResponse.documents.length > 0) doc = recResponse.documents[0];
           } catch (err) {
-            console.warn('Query by paystackRef failed:', err);
+            console.warn('Query by recommendation bookingID failed:', err);
           }
-        }
 
-        // 3. Query trip collection by BookingID (Capitalized B) & bookingID (Lowercase)
-        if (!doc) {
-          try {
-            const upperResponse = await database.listDocuments(
-              appwriteConfig.databaseId,
-              appwriteConfig.tripCollectionId,
-              [Query.equal('BookingID', bookingId)]
-            );
-            if (upperResponse.documents.length > 0) doc = upperResponse.documents[0];
-          } catch {
+          if (!doc) {
             try {
-              const lowerResponse = await database.listDocuments(
+              const response = await database.listDocuments(
                 appwriteConfig.databaseId,
                 appwriteConfig.tripCollectionId,
-                [Query.equal('bookingID', bookingId)]
+                [Query.equal('paystackRef', bookingId)]
               );
-              if (lowerResponse.documents.length > 0) doc = lowerResponse.documents[0];
+              if (response.documents.length > 0) doc = response.documents[0];
             } catch (err) {
-              console.warn('Query by bookingID/BookingID failed:', err);
+              console.warn('Query by paystackRef failed:', err);
             }
           }
-        }
 
-        // 4. Direct Document ID lookup fallbacks
-        if (!doc) {
-          try {
-            doc = await database.getDocument(
-              appwriteConfig.databaseId,
-              appwriteConfig.tripCollectionId,
-              bookingId
-            );
-          } catch {
+          if (!doc) {
+            try {
+              const upperResponse = await database.listDocuments(
+                appwriteConfig.databaseId,
+                appwriteConfig.tripCollectionId,
+                [Query.equal('BookingID', bookingId)]
+              );
+              if (upperResponse.documents.length > 0) doc = upperResponse.documents[0];
+            } catch {
+              try {
+                const lowerResponse = await database.listDocuments(
+                  appwriteConfig.databaseId,
+                  appwriteConfig.tripCollectionId,
+                  [Query.equal('bookingID', bookingId)]
+                );
+                if (lowerResponse.documents.length > 0) doc = lowerResponse.documents[0];
+              } catch (err) {
+                console.warn('Query by bookingID/BookingID failed:', err);
+              }
+            }
+          }
+
+          if (!doc) {
             try {
               doc = await database.getDocument(
                 appwriteConfig.databaseId,
-                appwriteConfig.recommendationCollectionId,
+                appwriteConfig.tripCollectionId,
                 bookingId
               );
             } catch {
-              // Ignore direct ID failure
+              try {
+                doc = await database.getDocument(
+                  appwriteConfig.databaseId,
+                  appwriteConfig.recommendationCollectionId,
+                  bookingId
+                );
+              } catch {
+                // Ignore direct ID failure
+              }
             }
           }
         }
 
-        if (!doc) throw new Error('Document not found');
+        // 2. Fallback: If doc is not found via bookingId or state is incomplete, fetch using the authenticated user's userId
+        if (!doc && activeUser?.$id) {
+          try {
+            const userTripsRes = await database.listDocuments(
+              appwriteConfig.databaseId,
+              appwriteConfig.tripCollectionId,
+              [
+                Query.equal('userId', activeUser.$id),
+                Query.orderDesc('$createdAt'),
+                Query.limit(1)
+              ]
+            );
+            if (userTripsRes.documents.length > 0) {
+              doc = userTripsRes.documents[0];
+            } else {
+              const userTripsResAlt = await database.listDocuments(
+                appwriteConfig.databaseId,
+                appwriteConfig.tripCollectionId,
+                [
+                  Query.equal('userId', activeUser.$id),
+                  Query.orderDesc('$createdAt'),
+                  Query.limit(1)
+                ]
+              );
+              if (userTripsResAlt.documents.length > 0) {
+                doc = userTripsResAlt.documents[0];
+              }
+            }
+          } catch (userQueryErr) {
+            console.warn('Failed to query trips by user ID:', userQueryErr);
+          }
 
-        let activeAccountName = '';
-        try {
-          const activeUser = await account.get();
-          activeAccountName = activeUser?.name || '';
-        } catch (e) {
-          console.warn('Unable to fetch active account:', e);
+          if (!doc) {
+            try {
+              const userRecsRes = await database.listDocuments(
+                appwriteConfig.databaseId,
+                appwriteConfig.recommendationCollectionId,
+                [
+                  Query.equal('userId', activeUser.$id),
+                  Query.orderDesc('$createdAt'),
+                  Query.limit(1)
+                ]
+              );
+              if (userRecsRes.documents.length > 0) {
+                doc = userRecsRes.documents[0];
+              } else {
+                const userRecsResAlt = await database.listDocuments(
+                  appwriteConfig.databaseId,
+                  appwriteConfig.recommendationCollectionId,
+                  [
+                    Query.equal('userId', activeUser.$id),
+                    Query.orderDesc('$createdAt'),
+                    Query.limit(1)
+                  ]
+                );
+                if (userRecsResAlt.documents.length > 0) {
+                  doc = userRecsResAlt.documents[0];
+                }
+              }
+            } catch (recQueryErr) {
+              console.warn('Failed to query recommendations by user ID:', recQueryErr);
+            }
+          }
         }
 
+        if (!doc) {
+          if (initialState && initialState.price) {
+            setTicketState(initialState);
+            setLoading(false);
+            return;
+          }
+          throw new Error('Document not found');
+        }
+
+        let activeAccountName = activeUser?.name || '';
         const parsed = parseTripData(doc);
 
         const fetchedName =
@@ -175,6 +244,7 @@ export const BookingSuccess = () => {
           parsed?.userName ||
           parsed?.fullName ||
           activeAccountName ||
+          initialState?.passengerName ||
           'Verified Explorer';
 
         let parsedPassengers: TicketPassenger[] | undefined = doc?.passengers;
@@ -203,16 +273,17 @@ export const BookingSuccess = () => {
           doc?.totalPrice ??
           doc?.price ??
           parsed?.estimatedPrice ??
+          initialState?.price ??
           0
         );
 
         const resolvedMode: 'flight' | 'taxi' =
-          doc?.mode || doc?.transportMode || parsed?.mode || 'flight';
+          doc?.mode || doc?.transportMode || parsed?.mode || initialState?.mode || 'flight';
 
         const resolvedDestination =
           typeof parsed?.location === 'object'
             ? parsed?.location?.city
-            : parsed?.location || doc?.destination || doc?.location || doc?.tripName || '';
+            : parsed?.location || doc?.destination || doc?.location || doc?.tripName || initialState?.destination || '';
 
         const resolvedPNR =
           doc?.BookingID ||
@@ -220,6 +291,7 @@ export const BookingSuccess = () => {
           doc?.bookingReference ||
           doc?.paystackRef ||
           bookingId ||
+          initialState?.bookingId ||
           `NX-${doc.$id.slice(-6).toUpperCase()}`;
 
         setTicketState({
@@ -238,14 +310,18 @@ export const BookingSuccess = () => {
         });
       } catch (err: any) {
         console.error('Failed to retrieve manifest telemetry:', err);
-        setError('Unable to locate ticket record matching identifier.');
+        if (initialState && initialState.price) {
+          setTicketState(initialState);
+        } else {
+          setError('Unable to locate ticket record matching identifier.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchTicketFromAppwrite();
-  }, [bookingId, ticketState]);
+  }, [bookingId, initialState]);
 
   if (loading) {
     return (
@@ -365,7 +441,6 @@ export const BookingSuccess = () => {
 
   return (
     <div className="w-full min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-50 via-slate-50/40 to-white px-4 py-12 md:py-20 flex flex-col justify-center items-center antialiased selection:bg-zinc-900 selection:text-white">
-      {/* Floating Download Ticket Popup Alert */}
       <div
         className={`fixed top-6 right-6 z-50 w-[90%] max-w-md bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-2xl p-4 transition-all duration-500 ease-out flex items-center justify-between gap-4 shadow-[0_20px_50px_rgba(15,23,42,0.1),inset_0_1px_0_rgba(255,255,255,0.8)] select-none ${
           isOpen
@@ -407,7 +482,6 @@ export const BookingSuccess = () => {
         </div>
       </div>
 
-      {/* Header Banner */}
       <div className="text-center space-y-3 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="w-14 h-14 bg-emerald-50/60 border border-emerald-100/80 rounded-full flex items-center justify-center mx-auto text-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.06)]">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -424,7 +498,6 @@ export const BookingSuccess = () => {
         </div>
       </div>
 
-      {/* Ticket Container */}
       <div
         ref={ticketRef}
         className="w-full max-w-lg bg-white border border-zinc-200/70 rounded-2xl shadow-[0_32px_64px_-20px_rgba(0,0,0,0.04)] overflow-hidden relative transition-all duration-300"
@@ -527,7 +600,6 @@ export const BookingSuccess = () => {
           </div>
         </div>
 
-        {/* Barcode Footnote */}
         <div className="p-5 bg-zinc-50/40 flex flex-col items-center justify-center space-y-2.5 text-center">
           <div className="flex items-center gap-[2px] opacity-80 h-8">
             {[1, 3, 1, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2, 1, 4, 1, 2, 3, 1, 4, 2, 1, 3, 1, 2].map(

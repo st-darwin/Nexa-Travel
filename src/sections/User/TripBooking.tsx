@@ -16,22 +16,14 @@ declare global {
   }
 }
 
-interface BookingState {
-  distance: number;
-  flightCost: number;
-  platformFee: number;
-  totalPrice: number;
-  preloadedTrip?: any;
-}
-
 type TransportMode = 'flight' | 'taxi';
 type TravelClass = 'economy' | 'premium' | 'business' | 'first';
 
 interface LiveFlightPayload {
-  baseTicketCost: number;
-  platformFee: number;
+  baseTicketCost?: number;
+  platformFee?: number;
   totalPriceToPay: number;
-  airlineName: string;
+  airlineName?: string;
   offerId: string;
 }
 
@@ -77,11 +69,13 @@ export const TripBooking: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const telemetry = (location.state as BookingState) || {
-    distance: 0,
-    flightCost: 0,
-    platformFee: 0,
-    totalPrice: 0,
+  const state = (location.state as any) || {};
+  const telemetry = {
+    distance: Number(state.distance) || 0,
+    flightCost: Number(state.flightCost) || 0,
+    platformFee: Number(state.platformFee) || 0,
+    totalPrice: Number(state.totalPrice) || 0,
+    preloadedTrip: state.preloadedTrip || null,
   };
 
   const [transportMode, setTransportMode] = useState<TransportMode | null>(null);
@@ -101,7 +95,6 @@ export const TripBooking: React.FC = () => {
     specialRequests: '',
   });
 
-  // Multi-Passenger Manifest State
   const [passengers, setPassengers] = useState<Passenger[]>([
     { given_name: '', family_name: '', email: '', phone: '', dateOfBirth: '', gender: 'm' }
   ]);
@@ -121,7 +114,6 @@ export const TripBooking: React.FC = () => {
     setPassengers(passengers.filter((_, i) => i !== index));
   };
 
-  // Load Route/Ecosystem Context
   useEffect(() => {
     let isMounted = true;
 
@@ -131,7 +123,7 @@ export const TripBooking: React.FC = () => {
         try {
           activeUser = await account.get();
         } catch {
-          // Unauthenticated or guest fallback
+          // Guest fallback
         }
 
         let parsedTrip: any = null;
@@ -174,7 +166,6 @@ export const TripBooking: React.FC = () => {
             origin: prev.origin !== 'Detecting Position...' ? prev.origin : `${sanitizedCity}, ${sanitizedCountry}`,
           }));
 
-          // Pre-populate primary passenger with account info if available
           if (activeUser?.name) {
             const nameParts = activeUser.name.trim().split(' ');
             setPassengers((prev) => {
@@ -231,10 +222,12 @@ export const TripBooking: React.FC = () => {
       );
 
       const responseData = JSON.parse(execution.responseBody);
-      if (responseData.success) {
-        setLiveFlight(responseData);
+      
+      if (responseData.success && responseData.offers && responseData.offers.length > 0) {
+        setLiveFlight(responseData.offers[0]);
       } else {
-        console.error('Duffel Core Pricing Refusal:', responseData.error);
+        console.error('Duffel Core Pricing Refusal:', responseData.error || 'No live flights found');
+        setLiveFlight(null);
       }
     } catch (err) {
       console.error('Cloud network handshake timeout:', err);
@@ -243,15 +236,23 @@ export const TripBooking: React.FC = () => {
     }
   }, [formData.origin, formData.destination, formData.departureDate, formData.departureTime, formData.travelClass]);
 
-  // Dynamic Pricing Computation (Multiplier applied per passenger count)
-  let baseFlightCost = telemetry.flightCost || 0;
-  let basePlatformFee = telemetry.platformFee || 0;
-  let baseGrandTotal = telemetry.totalPrice || 0;
+  // FIX: Robust Pricing Calculation with Safe Fallbacks and Correct Fee Scope
+  let baseFlightCost = telemetry.flightCost;
+  let basePlatformFee = telemetry.platformFee;
+  let baseGrandTotal = telemetry.totalPrice;
 
-  if (transportMode === 'flight' && liveFlight) {
+  if (transportMode === 'flight') {
     const classMultiplier = CLASS_MULTIPLIERS[formData.travelClass] || 1;
-    baseFlightCost = liveFlight.baseTicketCost * classMultiplier;
-    basePlatformFee = liveFlight.platformFee * classMultiplier;
+    
+    // Safely fallback to telemetry cost instead of a hardcoded magic $150
+    const fallbackTotal = telemetry.totalPrice > 0 ? telemetry.totalPrice : 150;
+    const activeFlightSource = liveFlight?.totalPriceToPay ?? fallbackTotal;
+
+    const rawTicketCost = liveFlight?.baseTicketCost ?? activeFlightSource * 0.9;
+
+    // Apply multiplier strictly to ticket cost, then compute flat 8% platform fee
+    baseFlightCost = rawTicketCost * classMultiplier;
+    basePlatformFee = baseFlightCost * 0.08; 
     baseGrandTotal = baseFlightCost + basePlatformFee;
   } else if (transportMode === 'taxi') {
     baseFlightCost = (telemetry.flightCost || 100) * 0.65;
@@ -259,7 +260,7 @@ export const TripBooking: React.FC = () => {
     baseGrandTotal = baseFlightCost + basePlatformFee;
   }
 
-  const passengerMultiplier = passengers.length;
+  const passengerMultiplier = passengers.length || 1;
   const finalFlightCost = baseFlightCost * passengerMultiplier;
   const finalPlatformFee = basePlatformFee * passengerMultiplier;
   const finalGrandTotal = baseGrandTotal * passengerMultiplier;
@@ -321,7 +322,7 @@ export const TripBooking: React.FC = () => {
       }
 
       let realBookingId = response.reference;
-      let carrierName = liveFlight?.airlineName || (transportMode === 'taxi' ? 'Nexa Ground Fleet' : 'Nexa Air');
+      const carrierName = liveFlight?.airlineName || (transportMode === 'taxi' ? 'Nexa Ground Fleet' : 'Nexa Air');
 
       if (transportMode === 'flight' && liveFlight) {
         try {
@@ -778,7 +779,9 @@ export const TripBooking: React.FC = () => {
               <div className="text-right space-y-0.5">
                 <span className="text-[9px] font-bold tracking-widest text-slate-400 uppercase font-mono">Transport Asset</span>
                 <p className="text-[10px] font-bold uppercase font-mono text-slate-700 block">
-                  {transportMode === 'flight' && liveFlight ? `${liveFlight.airlineName}` : (transportMode || 'Pending')}
+                  {transportMode === 'flight' && liveFlight 
+                    ? (liveFlight.airlineName || 'Nexa Air') 
+                    : (transportMode ? transportMode.toUpperCase() : 'Pending')}
                 </p>
               </div>
             </div>

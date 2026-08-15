@@ -44,6 +44,7 @@ export const getUser = async () => {
           "imageUrl", 
           "accountId", 
           "dateTime",
+          "isPro",
           "subscriptionStatus",
           "generationsToday",
           "lastGenerationDate",

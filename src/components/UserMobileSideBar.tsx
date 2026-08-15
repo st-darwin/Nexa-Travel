@@ -5,11 +5,17 @@ import { cn } from "../lib/utils";
 import { Menu, X, ChevronRight } from "lucide-react"; 
 import { logoutUser } from '../appwrite/Auth';
 
+
+
+
 export const UserMobileSidebar = () => {
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const user = useLoaderData();
+
+
+  const isPro = user?.isPro;
 
   // Lock scroll when menu is open for that premium native app feel
   useEffect(() => {
@@ -18,6 +24,7 @@ export const UserMobileSidebar = () => {
 
   const mainItems = UserSideBarItems.slice(0, 3);
   const remainingItems = UserSideBarItems.slice(3);
+
 
   const handleLogout = async () => {
     try {
@@ -28,6 +35,8 @@ export const UserMobileSidebar = () => {
       navigate('/sign-in');
     }
   };
+
+
 
   return (
     <>
@@ -115,7 +124,16 @@ export const UserMobileSidebar = () => {
                  </div>
                  <div className="leading-tight">
                     <p className="text-xs font-bold text-slate-900">{user?.name || "User"}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">Standard Plan</p>
+                    <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
+                      {isPro ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></span>
+                          <span className="text-slate-900 font-semibold">Nexa Pro Plan</span>
+                        </>
+                      ) : (
+                        "Standard Plan"
+                      )}
+                    </p>
                  </div>
               </div>
               <button 

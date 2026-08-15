@@ -338,7 +338,7 @@ const UserDashboard = () => {
     </div>
     <div className="flex items-baseline gap-2">
       <span className="text-xl sm:text-2xl font-bold font-mono tracking-tight text-zinc-900">
-        {data.isPro ? "UNLIMITED" : `${data.generationsToday} / 3`}
+        {data.isPro ? "Unlimited" : `${data.generationsToday} / 3`}
       </span>
       <span className="text-[11px] text-zinc-400 font-medium">
         {data.isPro ? "active plan" : "trips used"}
