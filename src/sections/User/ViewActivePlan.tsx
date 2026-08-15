@@ -94,7 +94,7 @@ export default function ViewActivePlan() {
             <div className="pt-4">
               <button
                 type="button"
-                onClick={() => navigate("/upgrade")}
+                onClick={() => navigate("/Home/upgrade")}
                 className="w-full py-3.5 px-6 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-950 font-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md"
               >
                 Change or Extend Plan
