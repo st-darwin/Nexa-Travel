@@ -23,6 +23,7 @@ import FlightSearch from "./sections/User/FlightSearch";
 import Checkout from "./sections/User/Checkout";
 import TicketView from "./sections/User/TicketView";
 import FlightDetails , {FlightArchiveLoader} from "./sections/User/FLightDetails"
+import UpgradePage from "./sections/User/Upgrade";
 
 
 const router = createBrowserRouter(
@@ -67,6 +68,7 @@ const router = createBrowserRouter(
         <Route path="checkout" element={<Checkout />} />
         <Route path="ticket-view/:bookingId" element={<TicketView />} />
         <Route path="flight-details/:flightId" element={<FlightDetails />} loader={FlightArchiveLoader} />
+        <Route path="upgrade" element={<UpgradePage />} />
       </Route>
 
       <Route path="/booking-success/:bookingId" element={<BookingSuccess />} />

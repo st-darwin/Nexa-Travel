@@ -4,7 +4,6 @@ import { database } from "./client";
 
 export const loginWithGoogle = async () => {
   try {
-    // Clean default URLs:
     const successUrl = `${window.location.origin}/`;
     const failureUrl = `${window.location.origin}/sign-in`;
 
@@ -21,9 +20,7 @@ export const loginWithGoogle = async () => {
 export const logoutUser = async () => {
   try {
     await account.deleteSession("current");
-    
-    // ✅ Let React Router switch the view client-side (No browser page reload = No 404!)
-    window.location.hash = ""; // optional cleanup
+    window.location.hash = ""; 
     return true; 
   } catch (error) {
     console.error("Logout failed", error);
@@ -47,6 +44,10 @@ export const getUser = async () => {
           "imageUrl", 
           "accountId", 
           "dateTime",
+          "subscriptionStatus",
+          "generationsToday",
+          "lastGenerationDate",
+          "itineraryCreated",
         ])
       ]
     );
@@ -105,6 +106,8 @@ export const storeUserData = async () => {
 
     if (documents.length > 0) return documents[0];
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
     const newUser = await database.createDocument(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
@@ -115,6 +118,10 @@ export const storeUserData = async () => {
         email: user.email,
         dateTime: new Date().toISOString(),
         imageUrl: googlePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
+        subscriptionStatus: "inactive",
+        generationsToday: 0,
+        lastGenerationDate: todayStr,
+        itineraryCreated: 0,
       }
     );
     return newUser;
@@ -159,7 +166,11 @@ export const getAllUser = async (limit: number, offset: number) => {
   }
 };
 
-export const incrementUserTripCount = async (accountId: string) => {
+/**
+ * Increments the user's daily AI generation count.
+ * Automatically checks if the date has rolled over to reset generationsToday to 1.
+ */
+export const incrementUserGeneration = async (accountId: string) => {
   try {
     const { documents } = await database.listDocuments(
       appwriteConfig.databaseId,
@@ -169,22 +180,35 @@ export const incrementUserTripCount = async (accountId: string) => {
 
     if (documents.length === 0) {
       console.error("No user document found for this account ID");
-      return;
+      return false;
     }
 
     const userDoc = documents[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let newGenerationsToday = 1;
+    if (userDoc.lastGenerationDate === todayStr) {
+      newGenerationsToday = (userDoc.generationsToday || 0) + 1;
+    }
 
     await database.updateDocument(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
       userDoc.$id,
       {
+        generationsToday: newGenerationsToday,
+        lastGenerationDate: todayStr,
         itineraryCreated: (userDoc.itineraryCreated || 0) + 1
       }
     );
     
-    console.log("Trip count updated successfully!");
+    console.log("Generation quota & trip count updated successfully!");
+    return true;
   } catch (error) {
-    console.error("Failed to increment trip count:", error);
+    console.error("Failed to increment generation count:", error);
+    return false;
   }
 };
+
+// Legacy alias if needed elsewhere
+export const incrementUserTripCount = incrementUserGeneration;

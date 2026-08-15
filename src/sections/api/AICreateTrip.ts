@@ -97,7 +97,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 ],
                 response_format: { type: 'json_object' }, 
                 stream: false,
-                max_tokens: 4000,
+                max_tokens: 2000,
             })
         });
 

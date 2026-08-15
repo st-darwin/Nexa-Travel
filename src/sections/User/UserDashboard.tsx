@@ -6,7 +6,8 @@ import {
 } from "react-router-dom";
 import { useState } from "react";
 import UserHeader from "../../components/UserHeader";
-import { account } from "../../appwrite/client";
+import { account, database } from "../../appwrite/client";
+import { Query } from "appwrite";
 import { getUserTrips, getUserNormalTrips } from "../../appwrite/Trips";
 import { parseTripData } from "../../lib/utils";
 import { AIBookingRateCard } from "./AIBookingRateCard";
@@ -39,6 +40,8 @@ export interface DashboardLoaderData {
   recdoc: any | null;
   normaltripCount: number;
   currentLiveFlight: any | null;
+  isPro: boolean;
+  generationsToday: number;
 }
 
 export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Promise<DashboardLoaderData> => {
@@ -62,6 +65,32 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       recdoc = await GetRecommendedTrips(user.$id, limit, offset);
     } catch (recError) {
       recdoc = null;
+    }
+
+    // Fetch User Subscription & generationsToday from Database Collection
+    let isPro = false;
+    let generationsToday = 0;
+    try {
+      const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || "database_id";
+      const usersCollectionId = import.meta.env.VITE_APPWRITE_USERS_COLLECTION_ID || "users";
+
+      const profileResponse = await database.listDocuments(
+        databaseId,
+        usersCollectionId,
+        [Query.equal("accountId", user.$id)]
+      );
+
+      if (profileResponse.documents.length > 0) {
+        const userDoc = profileResponse.documents[0];
+        isPro = userDoc.subscriptionStatus === "active";
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (userDoc.lastGenerationDate === todayStr) {
+          generationsToday = userDoc.generationsToday || 0;
+        }
+      }
+    } catch (dbError) {
+      console.warn("Could not fetch user profile document from database", dbError);
     }
 
     const mappedTrips: DashboardTrip[] = trips.map((raw: Record<string, any>) => {
@@ -115,6 +144,8 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       recdoc: recdoc || null,
       normaltripCount,
       currentLiveFlight,
+      isPro,
+      generationsToday,
     };
   } catch (error) {
     console.error("Nexa OS Loader Error:", error);
@@ -129,6 +160,8 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       recdoc: null,
       normaltripCount: 0,
       currentLiveFlight: null,
+      isPro: false,
+      generationsToday: 0,
     };
   }
 };
@@ -167,7 +200,55 @@ const UserDashboard = () => {
         description="Your world, organized and synchronized in real-time."
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Subscription / Upgrade Card */}
+      <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden transition-all">
+        {data.isPro && (
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+        )}
+        
+        <div className="flex items-center gap-4 relative z-10">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${data.isPro ? 'bg-amber-50 border-amber-200/60 text-amber-600' : 'bg-zinc-50 border-zinc-200/60 text-zinc-600'}`}>
+            {data.isPro ? (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            )}
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="text-xs font-mono font-bold text-zinc-900 uppercase tracking-wider">
+                {data.isPro ? 'Nexa Pro Tier Active' : 'Free Tier Workspace'}
+              </h4>
+              {data.isPro && (
+                <span className="px-2 py-0.5 text-[9px] font-mono font-extrabold bg-amber-500 text-white rounded-full tracking-wider uppercase shadow-xs">
+                  Pro 🌟
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-zinc-500 font-mono">
+              {data.isPro ? 'Unlimited high-speed itinerary generations enabled.' : `Generations used today: ${data.generationsToday} / 3 free trips.`}
+            </p>
+          </div>
+        </div>
+
+        {!data.isPro && (
+          <button
+            type="button"
+            onClick={() => navigate('/Home/upgrade')}
+            className="relative z-10 w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 shrink-0 active:scale-95"
+          >
+            <span>Upgrade to Pro</span>
+          </button>
+        )}
+      </div>
+
+      {/* Stats Grid including Pro & Quota Status */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Generated Itineraries */}
         <div
           onClick={() => navigate("archive")}
           className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between cursor-pointer hover:border-zinc-300 transition-colors"
@@ -192,6 +273,7 @@ const UserDashboard = () => {
           </div>
         </div>
 
+        {/* Confirmed Bookings */}
         <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">
@@ -213,7 +295,8 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between sm:col-span-2 lg:col-span-1">
+        {/* Normal Flights */}
+        <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">
               Normal Flights
@@ -233,13 +316,34 @@ const UserDashboard = () => {
             </svg>
           </div>
         </div>
+
+        {/* AI Quota & Pro Status Card */}
+        <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">
+              {data.isPro ? "Nexa Pro Status" : "AI Quota (Today)"}
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-xl sm:text-2xl font-bold font-mono tracking-tight ${data.isPro ? "text-amber-600" : "text-zinc-900"}`}>
+                {data.isPro ? "UNLIMITED" : `${data.generationsToday} / 3`}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-mono">
+                {data.isPro ? "Active Tier" : "generations"}
+              </span>
+            </div>
+          </div>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${data.isPro ? "bg-amber-50 border-amber-200/60 text-amber-600" : "bg-zinc-50 border-zinc-200/60 text-zinc-600"}`}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       <WeatherRecommendations recommendations={sampleDestinations} />
       <AIBookingRateCard />
 
-      {/* Live Flight  */}
-
+      {/* Live Flight */}
       {data.currentLiveFlight && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -308,21 +412,18 @@ const UserDashboard = () => {
                 </button>
 
                 <button
-  onClick={() => navigate(`/Home/ticket-view/${data.currentLiveFlight.$id}`)}
-  className="flex-1 sm:flex-initial px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 group/btn"
->
-  <span>View Ticket</span>
-  {/* SVG code */}
-</button>
+                  onClick={() => navigate(`/Home/ticket-view/${data.currentLiveFlight.$id}`)}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 group/btn"
+                >
+                  <span>View Ticket</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-
-      {/* Custom generated trip */}
-     {/* Custom generated trip & Weather Section */}
+      {/* Custom generated trip & Weather Section */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         {data.currentBookedTrip && (
           <div className="space-y-3 w-full min-w-0">
@@ -425,7 +526,6 @@ const UserDashboard = () => {
         </div>
       </div>
       
-
       {data.recdoc && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">

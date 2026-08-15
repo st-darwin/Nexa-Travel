@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFetcher, useNavigate } from 'react-router-dom';
-import { account } from '../../appwrite/client';
+import { account, database } from '../../appwrite/client'; // Ensure databases is exported from your client file
+import { Query } from 'appwrite';
+import { Sparkles, Lock } from 'lucide-react';
 
-type ChatStep = 'DESTINATION' | 'DURATION' | 'BUDGET' | 'TRAVEL_STYLE' | 'READY';
+type ChatStep = 'DESTINATION' | 'DURATION' | 'BUDGET' | 'TRAVEL_STYLE' | 'READY' | 'LIMIT_REACHED';
 
 interface TripConstraints {
   country: string;
@@ -30,6 +32,10 @@ export const TripConciergeChat: React.FC = () => {
   
   const [step, setStep] = useState<ChatStep>('DESTINATION');
   const [input, setInput] = useState('');
+  const [isPro, setIsPro] = useState(false);
+  const [generationsUsed, setGenerationsUsed] = useState(0);
+  const FREE_LIMIT = 3;
+
   const [constraints, setConstraints] = useState<TripConstraints>({
     country: '',
     numberOfDays: 3,
@@ -40,32 +46,68 @@ export const TripConciergeChat: React.FC = () => {
     userId: null,
   });
 
+  const [messages, setMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
+    { sender: 'ai', text: "Hey there! I'm Darwin, your personal AI travel companion. 🌍 Where are we jetting off to on your next adventure?" }
+  ]);
+
   useEffect(() => {
     let isMounted = true;
-    account.get()
-      .then((user) => {
-        if (isMounted && user.$id) {
-          setConstraints((prev) => ({ ...prev, userId: user.$id }));
+
+    async function fetchUserData() {
+      try {
+        const user = await account.get();
+        if (!isMounted || !user.$id) return;
+
+        setConstraints((prev) => ({ ...prev, userId: user.$id }));
+
+        // Query the custom 'users' collection using accountId
+        const response = await database.listDocuments(
+          '69bb1c70000c9d476c30', // Your Database ID
+          'users',              // Your Collection ID
+          [Query.equal('accountId', user.$id)]
+        );
+
+        if (response.documents.length > 0) {
+          const userDoc = response.documents[0];
+          const activePro = userDoc.subscriptionStatus === 'active';
+          const used = Number(userDoc.generationsToday || 0);
+
+          setIsPro(activePro);
+          setGenerationsUsed(used);
+
+          if (!activePro && used >= FREE_LIMIT) {
+            setStep('LIMIT_REACHED');
+            setMessages((prev) => [
+              ...prev,
+              { 
+                sender: 'ai', 
+                text: `⚠️ You've hit your free limit of ${FREE_LIMIT} itinerary generations! Upgrade to Nexa Pro to continue chatting with Darwin.` 
+              }
+            ]);
+          }
         }
-      })
-      .catch((err) => {
-        console.error("No active session found:", err);
-      });
+      } catch (err) {
+        console.error("Failed to fetch user session or profile data:", err);
+      }
+    }
+
+    fetchUserData();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const [messages, setMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
-    { sender: 'ai', text: "Hey there! I'm Darwin, your personal AI travel companion. 🌍 Where are we jetting off to on your next adventure?" }
-  ]);
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, fetcher.state]);
 
   const processUserAnswer = (answerText: any) => {
+    if (step === 'LIMIT_REACHED') {
+      navigate('/Home/upgrade');
+      return;
+    }
+
     const rawText = parseLocationInput(answerText);
     const userText = rawText.trim();
     if (!userText) return;
@@ -170,6 +212,7 @@ export const TripConciergeChat: React.FC = () => {
   }, [fetcher.data, navigate]);
 
   const renderSuggestions = () => {
+    if (step === 'LIMIT_REACHED') return ['✨ Upgrade to Pro Now'];
     if (step === 'DURATION') return ['3 Days', '5 Days', '7 Days', '10 Days'];
     if (step === 'BUDGET') return ['Backpacker / Budget', 'Moderate & Comfortable', 'High-end Luxury'];
     if (step === 'TRAVEL_STYLE') return ['Coastal & Chill', 'Historical & Culture', 'Nature & Adventure', 'Urban & Foodie'];
@@ -177,7 +220,7 @@ export const TripConciergeChat: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto bg-white/90 backdrop-blur-2xl border border-slate-200/90 rounded-[2.5rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.07)] flex flex-col h-[85vh] sm:h-[640px] max-h-[820px] overflow-hidden font-sans">
+    <div className="w-full max-w-xl mx-auto bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-[2.5rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.07)] flex flex-col h-[85vh] sm:h-[640px] max-h-[820px] overflow-hidden font-sans">
       {/* SaaS Header */}
       <div className="bg-black px-6 py-4.5 text-white flex items-center justify-between border-b border-slate-800">
         <div className="flex items-center gap-3">
@@ -189,11 +232,13 @@ export const TripConciergeChat: React.FC = () => {
               <h4 className="text-xs font-bold tracking-tight text-white">Darwin AI</h4>
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
             </div>
-            <p className="text-[10px] text-slate-400 font-medium">Personal Travel Assistant</p>
+            <p className="text-[10px] text-slate-400 font-medium">
+              {isPro ? 'Pro Assistant 🌟' : `Free Tier (${generationsUsed}/${FREE_LIMIT} used)`}
+            </p>
           </div>
         </div>
         <div className="text-[10px] font-mono bg-slate-900 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-full uppercase tracking-wider font-semibold">
-          {step === 'READY' ? 'Generating...' : 'Live Session'}
+          {step === 'READY' ? 'Generating...' : isPro ? 'Pro Session' : 'Free Session'}
         </div>
       </div>
 
@@ -231,13 +276,19 @@ export const TripConciergeChat: React.FC = () => {
       </div>
 
       {/* Quick Suggestion Chips */}
-      {step !== 'READY' && renderSuggestions().length > 0 && (
+      {renderSuggestions().length > 0 && (
         <div className="px-6 py-3 bg-white border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {renderSuggestions().map((suggestion, i) => (
             <button
               key={i}
               type="button"
-              onClick={() => processUserAnswer(suggestion)}
+              onClick={() => {
+                if (step === 'LIMIT_REACHED') {
+                  navigate('/Home/upgrade');
+                } else {
+                  processUserAnswer(suggestion);
+                }
+              }}
               className="text-[11px] font-medium bg-slate-100 hover:bg-black hover:text-white text-slate-700 border border-slate-200/60 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all cursor-pointer active:scale-95 shadow-2xs"
             >
               {suggestion}
@@ -247,7 +298,7 @@ export const TripConciergeChat: React.FC = () => {
       )}
 
       {/* Input Bar */}
-      {step !== 'READY' && (
+      {step !== 'READY' && step !== 'LIMIT_REACHED' && (
         <form onSubmit={handleSend} className="p-4 sm:p-5 bg-white border-t border-slate-200/70 flex gap-2.5 items-center">
           <input 
             type="text" 
@@ -263,6 +314,22 @@ export const TripConciergeChat: React.FC = () => {
             Send
           </button>
         </form>
+      )}
+
+      {step === 'LIMIT_REACHED' && (
+        <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-medium">Free limit reached</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/Home/upgrade')}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition-all"
+          >
+            Upgrade Plan
+          </button>
+        </div>
       )}
     </div>
   );

@@ -16,6 +16,7 @@ export interface RecommendationBookingData {
   transportMode?: string;
   carrier?: string;
   departureDate?: string;
+  passengers?: any;
 }
 
 export const createRecommendationBooking = async (bookingData: RecommendationBookingData) => {
