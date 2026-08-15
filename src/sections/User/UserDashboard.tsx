@@ -76,7 +76,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
         raw.bookingStatus === "confirmed" ||
         raw.paymentStatus === "successful" ||
         raw.paymentStatus === "paid" ||
-        Boolean(raw.bookingID || raw.BookingID || raw.paystackRef);
+        Boolean(raw.bookingID || raw.BookingID || raw.bookingId || raw.paystackRef);
 
       const rawTags = [parsed?.travelStyle, ...(Array.isArray(parsed?.interests) ? parsed.interests : [parsed?.interests])];
       const normalizedTags = rawTags.filter(Boolean) as string[];
@@ -138,7 +138,6 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   
-  // State for Flight Details Modal
   const [selectedFlight, setSelectedFlight] = useState<any | null>(null);
   const [isFlightModalOpen, setIsFlightModalOpen] = useState(false);
   
@@ -163,15 +162,12 @@ const UserDashboard = () => {
 
   return (
     <div className="w-full min-h-screen bg-zinc-50/50 p-4 sm:p-6 md:p-10 space-y-6 md:space-y-8 antialiased selection:bg-zinc-900 selection:text-white overflow-x-hidden">
-      {/* Header */}
       <UserHeader
         title={data.user ? `Welcome back, ${data.user} 👋` : "Welcome Guest 👋"}
         description="Your world, organized and synchronized in real-time."
       />
 
-      {/* Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Stat Card 1: Generated Itineraries */}
         <div
           onClick={() => navigate("archive")}
           className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between cursor-pointer hover:border-zinc-300 transition-colors"
@@ -196,7 +192,6 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        {/* Stat Card 2: Confirmed Bookings */}
         <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">
@@ -218,7 +213,6 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        {/* Stat Card 3: Normal Flights */}
         <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between sm:col-span-2 lg:col-span-1">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">
@@ -242,11 +236,8 @@ const UserDashboard = () => {
       </div>
 
       <WeatherRecommendations recommendations={sampleDestinations} />
-
-      {/* AI Booking Rate Card */}
       <AIBookingRateCard />
 
-      {/* Real-Time Flight Telemetry Card */}
       {data.currentLiveFlight && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -314,38 +305,12 @@ const UserDashboard = () => {
                   <span>Flight Info</span>
                 </button>
 
-              <button
-  onClick={() =>
-    navigate(
-      `/Home/ticket-view/${
-        data.currentLiveFlight.bookingId ||
-        data.currentLiveFlight.$id
-      }`,
-      {
-        state: {
-          booking: data.currentLiveFlight,
-          flight: data.currentLiveFlight, // pass the flight record directly
-          passenger: {
-            first_name: data.currentLiveFlight.passengerName?.split(' ')[0] || '',
-            last_name: data.currentLiveFlight.passengerName?.split(' ').slice(1).join(' ') || '',
-            email: data.currentLiveFlight.passengerEmail || '',
-          },
-          paystackRef: data.currentLiveFlight.paystackRef,
-          searchParams: {
-            from: data.currentLiveFlight.departureAirport,
-            to: data.currentLiveFlight.arrivalAirport,
-            date: data.currentLiveFlight.flightDate,
-          },
-        },
-      }
-    )
-  }
+                <button
+  onClick={() => navigate(`/Home/ticket-view/${data.currentLiveFlight.$id}`)}
   className="flex-1 sm:flex-initial px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 group/btn"
 >
   <span>View Ticket</span>
-  <svg className="w-4 h-4 text-sky-400 transition-transform group-hover/btn:translate-x-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
-  </svg>
+  {/* SVG code */}
 </button>
               </div>
             </div>
@@ -353,7 +318,6 @@ const UserDashboard = () => {
         </div>
       )}
 
-      {/* Active Journey Manifest Banner */}
       {data.currentBookedTrip && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -398,8 +362,7 @@ const UserDashboard = () => {
                     </span>
                     <span className="text-zinc-600">•</span>
                     <span className="text-zinc-500">
-                      Created{" "}
-                      {new Date(data.currentBookedTrip.createdAt).toLocaleDateString()}
+                      Created {new Date(data.currentBookedTrip.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -451,10 +414,8 @@ const UserDashboard = () => {
         </div>
       )}
 
-      {/* Active Weather Forecast */}
       <TripWeather destinationCity={data.currentBookedTrip?.location || ''} />
-    
-      {/* Recent Recommendation Booking Card */}
+
       {data.recdoc && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -524,7 +485,6 @@ const UserDashboard = () => {
         </div>
       )}
 
-      {/* Recent Trips Feed */}
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between border-b border-zinc-200/60 pb-3">
           <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400">
@@ -562,7 +522,6 @@ const UserDashboard = () => {
                     onClick={() => navigate(`my-itinerary/${trip.id}`)}
                     className="cursor-pointer"
                   >
-                    {/* Image Banner */}
                     <div className="h-36 w-full bg-zinc-100 relative overflow-hidden">
                       <img
                         src={trip.imgUrl}
@@ -582,7 +541,6 @@ const UserDashboard = () => {
                       </div>
                     </div>
 
-                    {/* Content */}
                     <div className="p-4 space-y-2">
                       <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-400 block truncate">
                         {trip.location}
@@ -595,18 +553,14 @@ const UserDashboard = () => {
 
                   <div className="px-4 pb-4 pt-3 border-t border-zinc-100 flex items-center justify-between text-xs font-mono">
                     <span className="text-zinc-700 font-bold truncate pr-2">
-                      {trip.estimatedPrice
-                        ? `$${trip.estimatedPrice}`
-                        : "Flex Pricing"}
+                      {trip.estimatedPrice ? `$${trip.estimatedPrice}` : "Flex Pricing"}
                     </span>
 
                     {trip.isBooked ? (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(
-                            `/booking-success/${trip.bookingId || trip.id}`
-                          );
+                          navigate(`/booking-success/${trip.bookingId || trip.id}`);
                         }}
                         className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                       >
@@ -629,7 +583,6 @@ const UserDashboard = () => {
               ))}
             </div>
 
-            {/* Pagination Controls */}
             {data.totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-zinc-200/60 pt-4 font-mono text-xs">
                 <button
@@ -655,7 +608,6 @@ const UserDashboard = () => {
         )}
       </div>
 
-      {/* Flight Details Modal / Drawer Component */}
       <FlightDetailsModal 
         isOpen={isFlightModalOpen} 
         onClose={() => setIsFlightModalOpen(false)} 

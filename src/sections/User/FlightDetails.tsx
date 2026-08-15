@@ -21,6 +21,8 @@ export interface FlightArchiveItem {
   bookingID: string;
   amount: number | null;
   createdAt: string;
+  email: string;
+  paystackRef: string;
 }
 
 export interface FlightArchiveLoaderData {
@@ -36,8 +38,6 @@ export const FlightArchiveLoader = async ({ request }: LoaderFunctionArgs): Prom
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
   const offset = (page - 1) * limit;
 
-  // Note: React Router loaders execute before location state is fully parsed in component scope, 
-  // so account.get() remains a robust fallback for direct URL visits / page refreshes.
   try {
     const user = await account.get();
     const result = await getUserNormalTrips(user.$id, limit, offset);
@@ -48,15 +48,17 @@ export const FlightArchiveLoader = async ({ request }: LoaderFunctionArgs): Prom
     const flights: FlightArchiveItem[] = rawTrips.map((raw: Record<string, any>) => ({
       id: raw.$id,
       airline: raw.airline || "Commercial Carrier",
-      flightNumber: raw.flightNumber || "N/A",
-      departureAirport: raw.departureAirport || raw.country || "Origin Hub",
-      arrivalAirport: raw.arrivalAirport || raw.name || "Arrival Hub",
-      passengerName: raw.passengerName || raw.passengerEmail || "Verified Traveler",
-      seatClass: raw.seatClass || "Economy",
-      paymentStatus: raw.paymentStatus || "Confirmed",
-      bookingID: raw.bookingID || raw.BookingID || raw.$id,
-      amount: raw.amount || raw.paymentAmount || raw.totalPrice || null,
+      flightNumber: raw.flightNumber || raw.flight_number || "N/A",
+      departureAirport: raw.departureAirport || raw.departure_airport || raw.country || "Origin Hub",
+      arrivalAirport: raw.arrivalAirport || raw.arrival_airport || raw.name || "Arrival Hub",
+      passengerName: raw.passengerName || raw.passenger_name || raw.passengerEmail || raw.email || "Verified Traveler",
+      seatClass: raw.seatClass || raw.seat_class || "Economy",
+      paymentStatus: raw.paymentStatus || raw.payment_status || "Confirmed",
+      bookingID: raw.bookingID || raw.BookingID || raw.bookingId || raw.$id,
+      amount: raw.amount || raw.paymentAmount || raw.totalPrice || raw.price || null,
       createdAt: raw.$createdAt,
+      email: raw.passengerEmail || raw.passenger_email || raw.email || '',
+      paystackRef: raw.paystackRef || raw.paymentReference || raw.payment_reference || raw.bookingID || raw.BookingID || raw.$id,
     }));
 
     const totalPages = Math.ceil(total / limit) || 1;
@@ -84,7 +86,6 @@ const FlightDetails = () => {
   const location = useLocation();
   const [, setSearchParams] = useSearchParams();
 
-  // Access user from location.state
   const passedUser = location.state?.user;
   const userId = passedUser?.$id;
 
@@ -98,7 +99,6 @@ const FlightDetails = () => {
 
   return (
     <div className="w-full min-h-screen bg-zinc-50/50 p-4 sm:p-6 md:p-10 space-y-6 md:space-y-8 antialiased selection:bg-zinc-900 selection:text-white">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <UserHeader
           title="Flight Bookings Archive"
@@ -112,7 +112,6 @@ const FlightDetails = () => {
         </button>
       </div>
 
-      {/* Stats Counter */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-white border border-zinc-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
@@ -131,7 +130,6 @@ const FlightDetails = () => {
         </div>
       </div>
 
-      {/* Flight Archive Feed */}
       <div className="space-y-4">
         {data.flights.length === 0 ? (
           <div className="bg-white border border-zinc-200/70 rounded-2xl p-12 text-center space-y-3">
@@ -193,23 +191,23 @@ const FlightDetails = () => {
                   <span className="text-[10px] font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
                     {flight.paymentStatus}
                   </span>
+// Inside your data.flights.map...
 
-                  <button
-                    onClick={() => navigate(`/booking-success/${flight.bookingID}`)}
-                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
-                  >
-                    <span>View Ticket</span>
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
-                    </svg>
-                  </button>
+<button
+  onClick={() => navigate(`/Home/ticket-view/${flight.id}`)}
+  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+>
+  <span>View Ticket</span>
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18m-3-12h15a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25v-9.5A2.25 2.25 0 014.5 6z" />
+  </svg>
+</button>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Pagination Controls */}
         {data.totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-zinc-200/60 pt-4 font-mono text-xs">
             <button

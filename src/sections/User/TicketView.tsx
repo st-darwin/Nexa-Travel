@@ -1,64 +1,84 @@
-import React, { useRef } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import jsPDF from 'jspdf';
+import { getTripByDocId } from '../../appwrite/Trips'; // Update path if needed
 
 export const TicketView: React.FC = () => {
-  const { bookingId } = useParams<{ bookingId: string }>();
-  const location = useLocation();
-  
-  // Extract state passed via router, or fallback to empty object
-  const state = location.state || {};
-  const booking = state.booking;
-  const passenger = state.passenger;
-  const paystackRef = state.paystackRef || booking?.paystackRef;
-  const searchParams = state.searchParams;
-
+  const { bookingId } = useParams<{ bookingId: string }>(); // This is now the Appwrite Document $id
+  const [booking, setBooking] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const ticketRef = useRef<HTMLDivElement>(null);
 
-  // Fallback identifiers if state wasn't passed
-  const currentBookingRef = booking?.bookingReference || booking?.bookingId || bookingId;
+  useEffect(() => {
+    const fetchTicketData = async () => {
+      if (!bookingId) return;
+      try {
+        const data = await getTripByDocId(bookingId);
+        setBooking(data);
+      } catch (error) {
+        console.error("Failed to load ticket data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTicketData();
+  }, [bookingId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="font-mono text-xs text-zinc-500 uppercase tracking-widest animate-pulse">
+          Retrieving Secure Manifest...
+        </div>
+      </div>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="font-mono text-xs text-red-500 uppercase tracking-widest">
+          Ticket Not Found or Unauthorized
+        </div>
+      </div>
+    );
+  }
+
+  // --- Map the Real Data from Appwrite ---
+  const currentBookingRef = booking.bookingID || booking.BookingID || booking.paystackRef || booking.$id;
+  const airlineName = booking.airline || 'Commercial Flight';
+  const originCode = booking.departureAirport || booking.country || 'ORIGIN';
+  const destinationCode = booking.arrivalAirport || booking.name || 'DEST';
+  const flightNum = booking.flightNumber || 'NX-FL';
   
-  const slice = state.flight?.slices?.[0];
-  const segment = slice?.segments?.[0];
+  // Format Date
+  const flightDate = booking.flightDate 
+    ? new Date(booking.flightDate).toLocaleDateString() 
+    : new Date(booking.$createdAt).toLocaleDateString();
 
-  const airlineName = state.flight?.airlineName || booking?.airline || 'Commercial Flight';
-  const originCode = searchParams?.from || segment?.origin?.iata_code || booking?.departureAirport || 'ORIGIN';
-  const destinationCode = searchParams?.to || segment?.destination?.iata_code || booking?.arrivalAirport || 'DEST';
-  
-  const flightNum = segment?.marketing_carrier_flight_number || segment?.id || booking?.flightNumber || 'NX-FL';
-  const flightDate = searchParams?.date || booking?.flightDate || (segment ? new Date(segment.departing_at).toLocaleDateString() : 'N/A');
+  // Format Time Helper
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr) return 'Scheduled';
+    if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr; // Already HH:MM
+    try { return new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } 
+    catch { return timeStr; }
+  };
 
-  const departureTimeString = segment?.departing_at || booking?.departureTime;
-  const arrivalTimeString = segment?.arriving_at || booking?.arrivalTime;
+  const formattedDepTime = formatTime(booking.departureTime);
+  const formattedArrTime = formatTime(booking.arrivalTime);
 
-  const formattedDepTime = departureTimeString 
-    ? new Date(departureTimeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-    : 'Scheduled';
-
-  const formattedArrTime = arrivalTimeString 
-    ? new Date(arrivalTimeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-    : 'Scheduled';
-
-  const passengerFullName = passenger 
-    ? `${passenger.first_name || passenger.firstName || ''} ${passenger.last_name || passenger.lastName || ''}`.trim()
-    : booking?.passengerName || booking?.fullName || 'Verified Traveler';
-
-  // Robust fallbacks checking multiple possible database property names
-  const passengerGender = passenger?.gender || booking?.gender || 'N/A';
-  const passengerDob = passenger?.born_on || passenger?.dateOfBirth || booking?.DOB || booking?.dateOfBirth || 'N/A';
+  const passengerFullName = booking.passengerName || booking.fullName || booking.passengerEmail || 'Verified Traveler';
+  const passengerGender = booking.gender || booking.passengerGender || 'N/A';
+  const passengerDob = booking.DOB || booking.dateOfBirth || 'N/A';
   const passengerGenderDob = `${passengerGender} | ${passengerDob}`;
+  const paystackRef = booking.paystackRef || booking.paymentReference || 'VERIFIED';
 
   const handleDownloadPDF = () => {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    // Styling configuration
     doc.setFillColor(15, 23, 42);
     doc.rect(15, 15, 180, 25, 'F');
-
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
@@ -119,7 +139,7 @@ export const TicketView: React.FC = () => {
     doc.setTextColor(15, 23, 42);
     doc.setFont('courier', 'bold');
     doc.setFontSize(9);
-    doc.text(paystackRef || 'VERIFIED', 22, 139);
+    doc.text(paystackRef, 22, 139);
     doc.setFont('helvetica', 'bold');
     doc.text('CONFIRMED', 110, 139);
 
@@ -193,7 +213,7 @@ export const TicketView: React.FC = () => {
           </div>
           <div>
             <span className="text-slate-400 block text-[10px] uppercase">Payment Ref</span>
-            <span className="font-bold text-black font-mono text-[10px]">{paystackRef || 'Verified'}</span>
+            <span className="font-bold text-black font-mono text-[10px]">{paystackRef}</span>
           </div>
         </div>
 

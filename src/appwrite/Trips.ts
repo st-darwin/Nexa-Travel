@@ -198,13 +198,15 @@ export const createNormalTrip = async (tripData: {
   airline?: string;
   seatClass?: string;
   passengerName?: string;
+  passengerEmail?: string;
+  gender?: string;
+  DOB?: string;
   paymentStatus?: string;
   paystackRef?: string;
 }) => {
   try {
     let activeUserId = tripData.userId;
 
-    // Automatically fetch from account session if userId is missing or set to anonymous
     if (!activeUserId || activeUserId === "anonymous") {
       try {
         const currentUser = await account.get();
@@ -318,7 +320,6 @@ export const createFlightBooking = async (bookingData: {
   bookingId?: string;
   gender?: string;
   DOB?: string;
-  
 }) => {
   try {
     let activeUserId = bookingData.userId;
@@ -404,5 +405,34 @@ export const createDuffelOrder = async (
   } catch (error: any) {
     console.error("Nexa OS :: Duffel Order Error:", error);
     throw error;
+  }
+};
+
+
+
+export const getTripByDocId = async (docId: string) => {
+  try {
+    // 1. Try to fetch from the Normal (Flights) Collection first
+    try {
+      const normalTrip = await database.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.normalCollectionID,
+        docId
+      );
+      if (normalTrip) return normalTrip;
+    } catch (err) {
+      // If not found in normal trips, ignore and fallback to AI trips collection
+    }
+
+    // 2. Fallback to AI Trip collection
+    const aiTrip = await database.getDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.tripCollectionId,
+      docId
+    );
+    return aiTrip;
+  } catch (error) {
+    console.error("Nexa OS :: getTripByDocId Error:", error);
+    return null;
   }
 };
