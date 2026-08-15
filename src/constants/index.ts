@@ -50,6 +50,8 @@ export const UserSideBarItems =[
 
 }
 
+
+
 ,
 
 
@@ -84,6 +86,16 @@ export const UserSideBarItems =[
 
   {
     id :7 ,
+    label : "View Active Plan",
+    icon: "/assets/icons/viewPlan.svg",
+    href: "ViewActivePlan"
+      
+  }
+,
+
+
+  {
+    id :8 ,
     label : "Settings",
     icon: "/assets/icons/settings.svg",
     href: "settings"

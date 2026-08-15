@@ -1,50 +1,157 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import UserHeader from "../../components/UserHeader";
-import { account } from "../../appwrite/client";
+import { account, database } from "../../appwrite/client";
+import { usePaystackPayment } from "react-paystack";
+import { Query } from "appwrite";
 
 export default function UpgradePage() {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">("monthly");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  
+  // Modal state for viewing active plan
+  const [showActivePlanModal, setShowActivePlanModal] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [checkingPlan, setCheckingPlan] = useState(false);
 
-  const handleSubscribe = async () => {
-    setLoading(true);
-    setError(null);
+  // Fetch current user and profile on mount
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const currentUser = await account.get();
+        setUser(currentUser);
+        fetchUserProfile(currentUser.$id);
+      } catch (err) {
+        navigate("/sign-in");
+      }
+    }
+    fetchUser();
+  }, [navigate]);
 
+  async function fetchUserProfile(accountId: string) {
     try {
-      const user = await account.get();
-      if (!user) {
-        navigate("/login");
-        return;
+      const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || "database_id";
+      const usersCollectionId = import.meta.env.VITE_APPWRITE_USERS_COLLECTION_ID || "users";
+      
+      const response = await database.listDocuments(
+        databaseId,
+        usersCollectionId,
+        [Query.equal("accountId", accountId)]
+      );
+
+      if (response.documents.length > 0) {
+        setUserProfile(response.documents[0]);
+      }
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  }
+
+  const amountInNaira = selectedPlan === "weekly" ? 2000 : 8000;
+
+  // Paystack Configuration (Amount must be in Kobo: Naira * 100)
+  const paystackConfig = {
+    reference: new Date().getTime().toString(),
+    email: user?.email || "user@example.com",
+    amount: amountInNaira * 100, 
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_your_public_key_here",
+  };
+
+  const initializePayment = usePaystackPayment(paystackConfig);
+
+  // Handle successful payment & update Appwrite database
+const handleSuccess = async (reference: any) => {
+    setLoading(true);
+    try {
+      const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || "database_id";
+      const usersCollectionId = import.meta.env.VITE_APPWRITE_USERS_COLLECTION_ID || "users";
+
+      // Calculate expiration date
+      const expiresAt = new Date();
+      if (selectedPlan === "weekly") {
+        expiresAt.setDate(expiresAt.getDate() + 7);
+      } else {
+        expiresAt.setDate(expiresAt.getDate() + 30);
       }
 
-      const amount = selectedPlan === "weekly" ? 2000 : 8000;
-      
-      console.log(`Initiating upgrade for ${user.email} - Plan: ${selectedPlan} (${amount} NGN)`);
+      // Find user profile document in Appwrite
+      const profileResponse = await database.listDocuments(
+        databaseId,
+        usersCollectionId,
+        [Query.equal("accountId", user.$id)]
+      );
 
+      if (profileResponse.documents.length > 0) {
+        const docId = profileResponse.documents[0].$id;
+        const updatedDoc = await database.updateDocument(databaseId, usersCollectionId, docId, {
+          subscriptionType: selectedPlan,
+          subscriptionExpiresAt: expiresAt.toISOString(),
+          subscriptionStatus: "active",
+          isPro: true, // 🌟 Sets isPro to true upon successful payment
+        });
+        setUserProfile(updatedDoc);
+      }
 
-      setTimeout(() => {
-        setLoading(false);
-        alert(`Redirecting to secure payment for ₦${amount.toLocaleString()}...`);
-      }, 1000);
-
-    } catch (err) {
-      console.error("Subscription error:", err);
-      setError("Unable to initialize payment session. Please log in again.");
+      alert("Payment successful! Your Nexa Pro subscription is now active 🌟");
+      setShowActivePlanModal(true);
+    } catch (dbErr) {
+      console.error("Failed to update subscription status in database:", dbErr);
+      setError("Payment was successful, but we failed to update your account automatically. Please contact support.");
+    } finally {
       setLoading(false);
     }
   };
 
+  const handleClose = () => {
+    console.log("Payment modal closed by user.");
+    setLoading(false);
+  };
+
+  const handleSubscribe = () => {
+    if (!user) {
+      navigate("/sign-in");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    
+    initializePayment({
+      onSuccess: (ref) => handleSuccess(ref),
+      onClose: handleClose,
+    });
+  };
+
+  // Check if current plan is active
+  const hasActivePlan = () => {
+    if (!userProfile || !userProfile.subscriptionType || userProfile.subscriptionType === "free") {
+      return false;
+    }
+    if (userProfile.subscriptionExpiresAt) {
+      return new Date(userProfile.subscriptionExpiresAt) > new Date();
+    }
+    return true;
+  };
+
   return (
     <main className="min-h-screen bg-zinc-50/50 p-4 sm:p-6 md:p-10 space-y-6 md:space-y-8 antialiased selection:bg-zinc-900 selection:text-white">
-      <UserHeader
-        title="Upgrade to Nexa Pro 🌟"
-        description="Unlock unlimited AI itinerary generations, priority route routing, and zero daily restrictions."
-        ctaText="Back to Dashboard"
-        ctaUrl="/Home"
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <UserHeader
+          title="Upgrade to Nexa Pro Membership"
+          description="Unlock unlimited AI itinerary generations, priority route routing, and zero daily restrictions."
+          ctaText="Back to Dashboard"
+          ctaUrl="/Home"
+        />
+        <button
+          type="button"
+          onClick={() => setShowActivePlanModal(true)}
+          className="self-start sm:self-auto px-5 py-2.5 rounded-xl bg-white border border-zinc-200 text-zinc-900 font-mono text-xs font-bold hover:bg-zinc-100 transition-all shadow-xs cursor-pointer"
+        >
+          View Active Plan 🔍
+        </button>
+      </div>
 
       <div className="max-w-4xl mx-auto space-y-8">
         
@@ -189,9 +296,9 @@ export default function UpgradePage() {
             className="w-full py-4 px-8 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white font-mono text-sm font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
-              <span>Preparing Secure Checkout...</span>
+              <span>Initializing Secure Checkout...</span>
             ) : (
-              <span>Proceed to Payment (₦{selectedPlan === "weekly" ? "2,000" : "8,000"})</span>
+              <span>Pay ₦{amountInNaira.toLocaleString()} via Paystack</span>
             )}
           </button>
           <p className="text-center text-[11px] text-zinc-400 font-mono mt-3">
@@ -200,6 +307,73 @@ export default function UpgradePage() {
         </div>
 
       </div>
+
+      {/* Active Plan Popup Modal */}
+      {showActivePlanModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white border border-zinc-200 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-6 relative">
+            <button
+              type="button"
+              onClick={() => setShowActivePlanModal(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 hover:bg-zinc-200 font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-400">
+                Subscription Status
+              </span>
+              <h3 className="text-xl font-bold text-zinc-900">Your Active Plan</h3>
+            </div>
+
+            {hasActivePlan() ? (
+              <div className="bg-zinc-900 text-white rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-1 bg-amber-400 text-zinc-950 font-mono text-[10px] font-extrabold uppercase tracking-widest rounded-full">
+                    {userProfile.subscriptionType.toUpperCase()} PRO ACTIVE ✨
+                  </span>
+                  <span className="text-xs font-mono text-emerald-400">● Live</span>
+                </div>
+                <div className="space-y-1 text-xs font-mono text-zinc-300">
+                  <p>Plan Type: <strong className="text-white capitalize">{userProfile.subscriptionType} Access</strong></p>
+                  <p>Expires On: <strong className="text-white">{new Date(userProfile.subscriptionExpiresAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</strong></p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-zinc-200/60 mx-auto flex items-center justify-center text-zinc-500 text-lg">
+                  🔒
+                </div>
+                <h4 className="font-bold text-zinc-900 text-sm">You don't have an active plan</h4>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Upgrade to Nexa Pro to unlock unlimited AI itineraries and premium travel routing features.
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowActivePlanModal(false);
+                  navigate("/Home/ViewActivePlan");
+                }}
+                className="flex-1 py-3 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-mono text-xs font-bold transition-all cursor-pointer"
+              >
+                Open Full View ↗
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowActivePlanModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-mono text-xs font-bold transition-all cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

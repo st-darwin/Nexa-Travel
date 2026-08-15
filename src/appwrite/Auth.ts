@@ -48,6 +48,7 @@ export const getUser = async () => {
           "generationsToday",
           "lastGenerationDate",
           "itineraryCreated",
+          "subscriptionType",
         ])
       ]
     );
@@ -119,6 +120,7 @@ export const storeUserData = async () => {
         dateTime: new Date().toISOString(),
         imageUrl: googlePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
         subscriptionStatus: "inactive",
+        subscriptionType: "free",
         generationsToday: 0,
         lastGenerationDate: todayStr,
         itineraryCreated: 0,
