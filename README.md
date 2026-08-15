@@ -1,73 +1,31 @@
-# React + TypeScript + Vite
+# Nexa Travel ✈️🌍
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, full-stack flight booking and intelligent travel management platform. Nexa Travel combines live global flight inventories and secure checkouts with an AI-powered strategist to deliver a seamless, personalized trip-planning experience.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+* **AI Travel Strategist & Chatbot:** An intelligent, integrated assistant that helps users plan trips, answers travel queries, and provides real-time support.
+* **Smart Browse Recommendations:** Curated destination suggestions and personalized travel recommendations tailored to user preferences.
+* **Live Flight Inventory:** Real-time global flight data and routes powered by the Duffel API and Appwrite functions.
+* **Secure Checkout:** Integrated with Paystack for seamless and reliable payment processing.
+* **ID-Driven Architecture:** Uses unique document IDs via URL parameters to fetch verified booking data directly from Appwrite, ensuring clean routing and zero state mismatch.
+* **Digital Ticketing:** Dynamic PDF boarding pass and manifest generation powered by `jsPDF`.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
 
-## Expanding the ESLint configuration
+* **Frontend:** React, TypeScript, Tailwind CSS
+* **Routing:** React Router DOM
+* **Backend:** Appwrite (Databases & Serverless Functions)
+* **APIs & Payments:** Duffel API (Flights), Paystack (Payments)
+* **AI & Utilities:** Generative AI APIs, `jsPDF` for document rendering
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## ⚙️ Quick Start
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Clone the repo:**
+   ```bash
+   git clone [https://github.com/your-username/nexa-travel.git](https://github.com/your-username/nexa-travel.git)
+   cd nexa-travel
