@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import { getTripByDocId } from '../../appwrite/Trips'; // Update path if needed
 
 export const TicketView: React.FC = () => {
-  const { bookingId } = useParams<{ bookingId: string }>(); // This is now the Appwrite Document $id
+  const { bookingId } = useParams<{ bookingId: string }>();
+  const navigate = useNavigate();
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const ticketRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -15,6 +17,10 @@ export const TicketView: React.FC = () => {
       try {
         const data = await getTripByDocId(bookingId);
         setBooking(data);
+        if (data) {
+          // Trigger the download prompt modal once data is successfully loaded
+          setShowDownloadModal(true);
+        }
       } catch (error) {
         console.error("Failed to load ticket data:", error);
       } finally {
@@ -60,7 +66,7 @@ export const TicketView: React.FC = () => {
   // Format Time Helper
   const formatTime = (timeStr?: string) => {
     if (!timeStr) return 'Scheduled';
-    if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr; // Already HH:MM
+    if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
     try { return new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } 
     catch { return timeStr; }
   };
@@ -149,10 +155,41 @@ export const TicketView: React.FC = () => {
     doc.text('Generated securely via Nexa OS Flight Systems. Please present this manifest at boarding.', 15, 165);
 
     doc.save(`Ticket-${currentBookingRef}.pdf`);
+    setShowDownloadModal(false);
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6 font-sans py-6 px-4">
+    <div className="w-full max-w-2xl mx-auto space-y-6 font-sans py-6 px-4 relative">
+      
+      {/* Download Confirmation Modal Popup */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs px-4 animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-[2rem] max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 text-center">
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl mx-auto flex items-center justify-center font-bold text-xl">
+              ✓
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-black tracking-tight">Ticket Retrieved Successfully</h3>
+              <p className="text-xs text-slate-500">Would you like to download your ticket as a PDF?</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => setShowDownloadModal(false)}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              >
+                No, Thanks
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                className="w-full py-3 bg-black hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
+              >
+                Yes, Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 text-center">
         <span className="text-emerald-600 text-xs font-bold uppercase tracking-wider block mb-1">✓ Payment Successful & Ticket Issued</span>
         <p className="text-[11px] text-emerald-700">Your seat has been confirmed on {airlineName}.</p>
@@ -217,12 +254,21 @@ export const TicketView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center gap-3 pt-2">
+          {/* Optional secondary download button */}
           <button 
             onClick={handleDownloadPDF}
-            className="w-full py-3.5 bg-black hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+            className="w-1/2 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2"
           >
-            <span>Download PDF Ticket</span>
+            <span>Download PDF</span>
+          </button>
+
+          {/* Main button now redirects home */}
+          <button 
+            onClick={() => navigate('/Home')}
+            className="w-1/2 py-3.5 bg-black hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+          >
+            <span>Back to Home</span>
           </button>
         </div>
       </div>
