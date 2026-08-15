@@ -191,7 +191,6 @@ const FlightDetails = () => {
                   <span className="text-[10px] font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
                     {flight.paymentStatus}
                   </span>
-// Inside your data.flights.map...
 
 <button
   onClick={() => navigate(`/Home/ticket-view/${flight.id}`)}

@@ -21,7 +21,8 @@ export interface RecommendationTrip {
   groupType: string;
   interests: string;
   estimatedPrice: string;
-  imageUrl: string;
+  imageUrl: string;      // Main fallback/hero image[cite: 1]
+  imageUrls: string[];   // 3 destination-specific images[cite: 1]
   weatherTemp: string;
   weatherCondition: string;
   description: string;
@@ -46,6 +47,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Beaches & Culinary",
     estimatedPrice: "$3,200",
     imageUrl: `${BASE_URL}assets/images/card-img-3.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "26°C",
     weatherCondition: "Sunny & Clear",
     description: "Experience iconic whitewashed cliffside architecture, volcanic black sand beaches, catamarans on the Caldera, and world-class Mediterranean wine dining.",
@@ -118,6 +124,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Coastal & Culinary",
     estimatedPrice: "$2,800",
     imageUrl: `${BASE_URL}assets/images/card-img-5.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "24°C",
     weatherCondition: "Mainly Clear",
     description: "Cliffside coastal panoramas, fragrant lemon groves, private boat excursions to Capri, and authentic Italian pasta masterclasses.",
@@ -181,6 +192,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "History & Nature",
     estimatedPrice: "$1,950",
     imageUrl: `${BASE_URL}assets/images/card-img-6.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "22°C",
     weatherCondition: "Clear Sky",
     description: "Immerse yourself in traditional tea ceremonies, serene bamboo groves, red torii shrine hikes, and authentic Kaiseki dining.",
@@ -262,6 +278,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Wellness & Nature",
     estimatedPrice: "$980",
     imageUrl: `${BASE_URL}assets/images/card-img-4.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1570789210967-2cac24afeb00?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "28°C",
     weatherCondition: "Tropical Sunny",
     description: "Lush rice terraces, sacred waterfalls, holistic sound baths, volcano sunrise treks, and organic farm gastronomy.",
@@ -334,6 +355,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Hiking & Outdoors",
     estimatedPrice: "$3,600",
     imageUrl: `${BASE_URL}assets/images/card-img-3.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1502784444187-359ac186c5bb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1491557345352-5929e343eb89?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "18°C",
     weatherCondition: "Crisp Sunny",
     description: "Glacier mountain railways, iconic Matterhorn vistas, high-altitude alpine hiking, and traditional Swiss fondue dining.",
@@ -405,6 +431,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Shopping & Nightlife",
     estimatedPrice: "$2,900",
     imageUrl: `${BASE_URL}assets/images/card-img-5.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1546412414-e1885259563d?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "31°C",
     weatherCondition: "Clear & Sunny",
     description: "Soak in world-record architecture, luxury dune safaris with Bedouin dining, high-end yachting, and futuristic museum tours.",
@@ -468,6 +499,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Nature & Culinary",
     estimatedPrice: "$2,100",
     imageUrl: `${BASE_URL}assets/images/card-img-6.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1516026662312-26c7ae7c424a?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "23°C",
     weatherCondition: "Sunny Coastal",
     description: "Table Mountain cable rides, African penguin encounters at Boulders Beach, Stellenbosch wine tasting, and Cape Peninsula drives.",
@@ -549,6 +585,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Hiking & Nature",
     estimatedPrice: "$2,600",
     imageUrl: `${BASE_URL}assets/images/card-img-4.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1504893524553-eefd5dffe0f1?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1529963183134-61a90db47eaf?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "4°C",
     weatherCondition: "Fresh & Crisp",
     description: "Erupting geysers, roaring glacial waterfalls, volcanic black sand beaches, geothermal Blue Lagoon soaking, and Aurora hunts.",
@@ -621,6 +662,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Hiking & Photography",
     estimatedPrice: "$1,850",
     imageUrl: `${BASE_URL}assets/images/card-img-3.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512467336214-a8dd4846f5d8?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "19°C",
     weatherCondition: "Sunny Mountain",
     description: "Turquoise waters of Lake Louise and Moraine Lake, icefield parkway drives, wildlife spotting, and mountain gondolas.",
@@ -693,6 +739,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Beaches & Water Activities",
     estimatedPrice: "$4,500",
     imageUrl: `${BASE_URL}assets/images/card-img-5.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1573843981267-be1999ff37cd?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "29°C",
     weatherCondition: "Tropical Clear",
     description: "Private overwater villa living, swimming alongside manta rays and whale sharks, bioluminescent beaches, and underwater spa treatments.",
@@ -765,6 +816,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Museums & Culinary",
     estimatedPrice: "$1,650",
     imageUrl: `${BASE_URL}assets/images/card-img-6.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1511527846003-884b80a158bb?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "23°C",
     weatherCondition: "Sunny Mediterranean",
     description: "Marvel at Gaudi's Sagrada Familia and Park Guell, wander Gothic Quarter alleys, enjoy Barceloneta beach, and sample Catalan tapas.",
@@ -828,6 +884,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "History & Hiking",
     estimatedPrice: "$1,750",
     imageUrl: `${BASE_URL}assets/images/card-img-4.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1589308078059-be1415eab4c3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1509212034292-154ff2008dae?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "17°C",
     weatherCondition: "Clear High Altitude",
     description: "Explore imperial Inca ruins in Sacred Valley, ride panoramic train through cloud forests, and discover lost citadel of Machu Picchu.",
@@ -909,6 +970,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Outdoor Activities",
     estimatedPrice: "$2,700",
     imageUrl: `${BASE_URL}assets/images/card-img-3.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "16°C",
     weatherCondition: "Clear Alpine",
     description: "Jet boating through river canyons, Milford Sound scenic cruises, bungy jumping, and pinot noir wine tasting in Central Otago.",
@@ -981,6 +1047,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "Shopping & Food",
     estimatedPrice: "$2,100",
     imageUrl: `${BASE_URL}assets/images/card-img-6.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "21°C",
     weatherCondition: "Clear Urban",
     description: "Explore Shibuya Crossing, teamLab digital art immersive worlds, high-end Ginza shopping, Michelin ramen shops, and Akihabara tech culture.",
@@ -1053,6 +1124,11 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     interests: "History & Shopping",
     estimatedPrice: "$1,100",
     imageUrl: `${BASE_URL}assets/images/card-img-5.png`,
+    imageUrls: [
+      "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1489493887464-892ded60d77e?auto=format&fit=crop&w=800&q=80"
+    ],
     weatherTemp: "27°C",
     weatherCondition: "Warm Sunny",
     description: "Stay in traditional courtyard Riads, wander aromatic spice souks, visit Jardin Majorelle, and hike Berber villages in High Atlas mountains.",
