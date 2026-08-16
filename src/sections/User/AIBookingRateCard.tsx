@@ -112,7 +112,7 @@ export const AIBookingRateCard: React.FC = () => {
       <div className="flex items-center justify-between z-10">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
-            AI Conversion Rate
+           Worldwide AI Conversion Rate
           </span>
           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
             <BeakerIcon size={10} className="mr-1 text-slate-500" /> Live

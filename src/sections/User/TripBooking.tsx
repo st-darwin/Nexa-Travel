@@ -16,6 +16,14 @@ declare global {
   }
 }
 
+interface BookingState {
+  distance: number;
+  flightCost: number;
+  platformFee: number;
+  totalPrice: number;
+  preloadedTrip?: any;
+}
+
 type TransportMode = 'flight' | 'taxi';
 type TravelClass = 'economy' | 'premium' | 'business' | 'first';
 
@@ -69,6 +77,7 @@ export const TripBooking: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // FIX: Force numeric conversion to eliminate NaN scenarios from routing state
   const state = (location.state as any) || {};
   const telemetry = {
     distance: Number(state.distance) || 0,
@@ -223,6 +232,7 @@ export const TripBooking: React.FC = () => {
 
       const responseData = JSON.parse(execution.responseBody);
       
+      // FIX: Access the nested 'offers' array correctly to prevent undefined properties
       if (responseData.success && responseData.offers && responseData.offers.length > 0) {
         setLiveFlight(responseData.offers[0]);
       } else {
@@ -236,23 +246,20 @@ export const TripBooking: React.FC = () => {
     }
   }, [formData.origin, formData.destination, formData.departureDate, formData.departureTime, formData.travelClass]);
 
-  // FIX: Robust Pricing Calculation with Safe Fallbacks and Correct Fee Scope
+  // FIX: Robust Pricing Calculation with Safe Fallbacks 
   let baseFlightCost = telemetry.flightCost;
   let basePlatformFee = telemetry.platformFee;
   let baseGrandTotal = telemetry.totalPrice;
 
-  if (transportMode === 'flight') {
+  if (transportMode === 'flight' && liveFlight) {
     const classMultiplier = CLASS_MULTIPLIERS[formData.travelClass] || 1;
+    const totalPayable = liveFlight.totalPriceToPay || 150;
     
-    // Safely fallback to telemetry cost instead of a hardcoded magic $150
-    const fallbackTotal = telemetry.totalPrice > 0 ? telemetry.totalPrice : 150;
-    const activeFlightSource = liveFlight?.totalPriceToPay ?? fallbackTotal;
+    const rawTicketCost = liveFlight.baseTicketCost ?? totalPayable * 0.9;
+    const rawPlatformFee = liveFlight.platformFee ?? totalPayable * 0.1;
 
-    const rawTicketCost = liveFlight?.baseTicketCost ?? activeFlightSource * 0.9;
-
-    // Apply multiplier strictly to ticket cost, then compute flat 8% platform fee
     baseFlightCost = rawTicketCost * classMultiplier;
-    basePlatformFee = baseFlightCost * 0.08; 
+    basePlatformFee = rawPlatformFee * classMultiplier;
     baseGrandTotal = baseFlightCost + basePlatformFee;
   } else if (transportMode === 'taxi') {
     baseFlightCost = (telemetry.flightCost || 100) * 0.65;

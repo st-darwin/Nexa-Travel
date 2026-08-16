@@ -22,12 +22,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return data({ error: "User session not found. Please log in to generate and save trips." }, { status: 401 });
     }
 
-    // Fallback safely for server-side execution if process.env is used by your adapter
-    const deepseekApiKey = import.meta.env.VITE_DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
+    const groqApiKey = import.meta.env.VITE_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
     const unsplashApiKey = import.meta.env.VITE_UNSPLASH_ACCESS_KEY || process.env.VITE_UNSPLASH_ACCESS_KEY;
 
-    if (!deepseekApiKey) {
-        throw new Error("Missing DeepSeek/OpenRouter API Key on the server.");
+    if (!groqApiKey) {
+        throw new Error("Missing Groq API Key on the server.");
     }
 
     try {
@@ -36,7 +35,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         Interests: '${interests}'
         TravelStyle: '${travelStyle}'
         GroupType: '${groupType}'
-        Return the itinerary and lowest estimated price in a clean, non-markdown JSON format with the following structure:
+        Return the itinerary and lowest estimated price in a clean, valid JSON format with the following structure:
         {
         "name": "A descriptive title for the trip",
         "description": "A brief description of the trip and its highlights not exceeding 100 words",
@@ -48,16 +47,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         "interests": "${interests}",
         "groupType": "${groupType}",
         "bestTimeToVisit": [
-          '🌸 Season (from month to month): reason to visit',
-          '☀️ Season (from month to month): reason to visit',
-          '🍁 Season (from month to month): reason to visit',
-          '❄️ Season (from month to month): reason to visit'
+          "🌸 Season (from month to month): reason to visit",
+          "☀️ Season (from month to month): reason to visit",
+          "🍁 Season (from month to month): reason to visit",
+          "❄️ Season (from month to month): reason to visit"
         ],
         "weatherInfo": [
-          '☀️ Season: temperature range in Celsius (temperature range in Fahrenheit)',
-          '🌦️ Season: temperature range in Celsius (temperature range in Fahrenheit)',
-          '🌧️ Season: temperature range in Celsius (temperature range in Fahrenheit)',
-          '❄️ Season: temperature range in Celsius (temperature range in Fahrenheit)'
+          "☀️ Season: temperature range in Celsius (temperature range in Fahrenheit)",
+          "🌦️ Season: temperature range in Celsius (temperature range in Fahrenheit)",
+          "🌧️ Season: temperature range in Celsius (temperature range in Fahrenheit)",
+          "❄️ Season: temperature range in Celsius (temperature range in Fahrenheit)"
         ],
         "location": {
           "city": "name of the main city or region",
@@ -79,31 +78,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         ]
     }`;
 
-        const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${deepseekApiKey}`,
-                "Accept": "application/json",
+                "Authorization": `Bearer ${groqApiKey}`,
             },
             body: JSON.stringify({
-                model: "anthropic/claude-3-haiku", 
+                model: "llama-3.3-70b-versatile", // Free, incredibly fast, and smart model on Groq
                 messages: [
                     { 
                         role: "system", 
-                        content: "You are a helpful travel assistant. You must output only valid JSON without markdown code blocks." 
+                        content: "You are a helpful travel assistant. You must output valid JSON using the requested structure." 
                     },
                     { role: "user", content: prompt }
                 ],
-                response_format: { type: 'json_object' }, 
-                stream: false,
-                max_tokens: 2000,
+                response_format: { type: "json_object" },
+                max_tokens: 4000,
             })
         });
 
         if (!aiResponse.ok) {
             const errorData = await aiResponse.json();
-            throw new Error(`OpenRouter API Error: ${errorData.error?.message || aiResponse.statusText}`);
+            throw new Error(`Groq API Error: ${errorData.error?.message || aiResponse.statusText}`);
         }
 
         const aiData = await aiResponse.json();

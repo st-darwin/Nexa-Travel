@@ -37,24 +37,24 @@ export const Loader = async ({ params }: LoaderFunctionArgs) => {
       trip,
       isPreloaded: false,
       allTrips: Trips.trips.map((raw) => {
-        const parsed = parseTripData(raw);
+        const parsed = parseTripData(raw) || {};
         let locationString = "Lagos, Nigeria";
 
-        if (typeof parsed.location === 'string') {
+        if (typeof parsed?.location === 'string') {
           locationString = parsed.location;
-        } else if (typeof parsed.location === 'object' && parsed.location !== null) {
+        } else if (typeof parsed?.location === 'object' && parsed.location !== null) {
           locationString = parsed.location.city || "Lagos, Nigeria";
         }
         return {
           id: raw.$id,
-          name: parsed.name,
+          name: parsed?.name || "Untitled Trip",
           imgUrl: raw.imgUrls?.[0] || "",
           location: locationString,
-          estimatedPrice: parsed.estimatedPrice,
-          duration: parsed.duration,
-          budget: parsed.budget,
-          travelStyle: parsed.travelStyle,
-          interests: parsed.interests
+          estimatedPrice: parsed?.estimatedPrice,
+          duration: parsed?.duration,
+          budget: parsed?.budget,
+          travelStyle: parsed?.travelStyle,
+          interests: parsed?.interests
         };
       })
     };
