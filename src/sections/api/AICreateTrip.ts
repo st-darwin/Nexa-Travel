@@ -4,7 +4,7 @@ import { appwriteConfig, database } from "../../appwrite/client";
 import { ID } from "appwrite";
 import { incrementUserTripCount } from "../../appwrite/Auth";
 
-let count = 0; 
+let count  = 0; 
 
 export const action = async ({ request }: ActionFunctionArgs) => {
     const {
@@ -22,8 +22,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return data({ error: "User session not found. Please log in to generate and save trips." }, { status: 401 });
     }
 
-    const groqApiKey = import.meta.env.VITE_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-    const unsplashApiKey = import.meta.env.VITE_UNSPLASH_ACCESS_KEY || process.env.VITE_UNSPLASH_ACCESS_KEY;
+    const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
+    const unsplashApiKey = import.meta.env.VITE_UNSPLASH_ACCESS_KEY ;
 
     if (!groqApiKey) {
         throw new Error("Missing Groq API Key on the server.");
@@ -85,7 +85,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 "Authorization": `Bearer ${groqApiKey}`,
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile", // Free, incredibly fast, and smart model on Groq
+                model: "openai/gpt-oss-20b",
                 messages: [
                     { 
                         role: "system", 
@@ -123,7 +123,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             );
             if (imageResponse.ok) {
                 const imageJson = await imageResponse.json();
-                imageUrls = imageJson.results ? imageJson.results.slice(0, 3).map((result: any) => result.urls?.regular || null) : [];
+                imageUrls = imageJson.results 
+                    ? imageJson.results
+                        .slice(0, 3)
+                        .map((result: any) => result.urls?.regular)
+                        .filter((url: string | undefined): url is string => Boolean(url)) 
+                    : [];
             }
         } catch (imgErr) {
             console.warn("Unsplash fetch skipped due to network limitation:", imgErr);

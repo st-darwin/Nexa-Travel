@@ -436,3 +436,33 @@ export const getTripByDocId = async (docId: string) => {
     return null;
   }
 };
+
+export const updateTripFlightDetails = async (
+  tripId: string, 
+  flightData: {
+    departureAirport: string;
+    arrivalAirport: string;
+    flightNumber: string;
+    seatClass: string;
+    departureTime: string;
+    arrivalTime: string;
+    carrier: string;
+    amount?: number;
+
+  }
+) => {
+  try {
+    const trip = await database.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.tripCollectionId,
+      tripId,
+      {
+        ...flightData,
+      }
+    );
+    return trip;
+  } catch (error) {
+    console.error("Unable to update trip flight parameters:", error);
+    throw error;
+  }
+};

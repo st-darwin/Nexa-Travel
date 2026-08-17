@@ -16,14 +16,6 @@ declare global {
   }
 }
 
-interface BookingState {
-  distance: number;
-  flightCost: number;
-  platformFee: number;
-  totalPrice: number;
-  preloadedTrip?: any;
-}
-
 type TransportMode = 'flight' | 'taxi';
 type TravelClass = 'economy' | 'premium' | 'business' | 'first';
 
@@ -33,6 +25,7 @@ interface LiveFlightPayload {
   totalPriceToPay: number;
   airlineName?: string;
   offerId: string;
+  slices?: any[];
 }
 
 interface Passenger {
@@ -43,13 +36,6 @@ interface Passenger {
   dateOfBirth?: string;
   gender?: 'm' | 'f';
 }
-
-const CLASS_MULTIPLIERS: Record<TravelClass, number> = {
-  economy: 1.0,
-  premium: 1.35,
-  business: 1.85,
-  first: 2.50,
-};
 
 const convertToIATA = (locationStr: string, defaultFallback = 'LOS'): string => {
   if (!locationStr) return defaultFallback;
@@ -77,8 +63,9 @@ export const TripBooking: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // FIX: Force numeric conversion to eliminate NaN scenarios from routing state
   const state = (location.state as any) || {};
+  const flightDetails = state.flightDetails || {};
+  
   const telemetry = {
     distance: Number(state.distance) || 0,
     flightCost: Number(state.flightCost) || 0,
@@ -87,21 +74,24 @@ export const TripBooking: React.FC = () => {
     preloadedTrip: state.preloadedTrip || null,
   };
 
-  const [transportMode, setTransportMode] = useState<TransportMode | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(true);
+  const [transportMode, setTransportMode] = useState<TransportMode | null>(state.liveFlight ? 'flight' : null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(!state.liveFlight);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [isFetchingFlight, setIsFetchingFlight] = useState<boolean>(false);
-  const [liveFlight, setLiveFlight] = useState<LiveFlightPayload | null>(null);
+  
+  const [liveFlight, setLiveFlight] = useState<LiveFlightPayload | null>(state.liveFlight || null);
   const [, setIsPreloaded] = useState<boolean>(false);
 
   const [formData, setFormData] = useState({
-    origin: 'Detecting Position...',
-    destination: 'Resolving Destination...',
-    departureDate: '',
-    departureTime: '',
-    travelClass: 'economy' as TravelClass,
+    origin: flightDetails.departureAirport || 'LOS',
+    destination: flightDetails.arrivalAirport || state.preloadedTrip?.location?.city || state.preloadedTrip?.destination || 'Destination',
+    departureDate: flightDetails.departureTime ? flightDetails.departureTime.split('T')[0] : '',
+    departureTime: flightDetails.departureTime ? flightDetails.departureTime.split('T')[1]?.substring(0, 5) : '12:00',
+    travelClass: flightDetails.seatClass || 'economy',
     specialRequests: '',
+    flightNumber: flightDetails.flightNumber || '',
+    carrier: flightDetails.carrier || 'Nexa Air',
   });
 
   const [passengers, setPassengers] = useState<Passenger[]>([
@@ -210,6 +200,8 @@ export const TripBooking: React.FC = () => {
   };
 
   const fetchFlightQuote = useCallback(async () => {
+    if (state.liveFlight) return;
+
     setIsFetchingFlight(true);
     try {
       const sanitizedOrigin = convertToIATA(formData.origin, 'LOS');
@@ -232,7 +224,6 @@ export const TripBooking: React.FC = () => {
 
       const responseData = JSON.parse(execution.responseBody);
       
-      // FIX: Access the nested 'offers' array correctly to prevent undefined properties
       if (responseData.success && responseData.offers && responseData.offers.length > 0) {
         setLiveFlight(responseData.offers[0]);
       } else {
@@ -244,23 +235,17 @@ export const TripBooking: React.FC = () => {
     } finally {
       setIsFetchingFlight(false);
     }
-  }, [formData.origin, formData.destination, formData.departureDate, formData.departureTime, formData.travelClass]);
+  }, [formData.origin, formData.destination, formData.departureDate, formData.departureTime, formData.travelClass, state.liveFlight]);
 
-  // FIX: Robust Pricing Calculation with Safe Fallbacks 
   let baseFlightCost = telemetry.flightCost;
   let basePlatformFee = telemetry.platformFee;
   let baseGrandTotal = telemetry.totalPrice;
 
-  if (transportMode === 'flight' && liveFlight) {
-    const classMultiplier = CLASS_MULTIPLIERS[formData.travelClass] || 1;
-    const totalPayable = liveFlight.totalPriceToPay || 150;
-    
-    const rawTicketCost = liveFlight.baseTicketCost ?? totalPayable * 0.9;
-    const rawPlatformFee = liveFlight.platformFee ?? totalPayable * 0.1;
-
-    baseFlightCost = rawTicketCost * classMultiplier;
-    basePlatformFee = rawPlatformFee * classMultiplier;
-    baseGrandTotal = baseFlightCost + basePlatformFee;
+  if (transportMode === 'flight' && (liveFlight || telemetry.totalPrice > 0)) {
+    const totalPayable = telemetry.totalPrice > 0 ? telemetry.totalPrice : (liveFlight?.totalPriceToPay || 150);
+    baseFlightCost = telemetry.flightCost > 0 ? telemetry.flightCost : (liveFlight?.baseTicketCost ?? totalPayable * 0.9);
+    basePlatformFee = telemetry.platformFee > 0 ? telemetry.platformFee : (liveFlight?.platformFee ?? totalPayable * 0.1);
+    baseGrandTotal = totalPayable;
   } else if (transportMode === 'taxi') {
     baseFlightCost = (telemetry.flightCost || 100) * 0.65;
     basePlatformFee = baseFlightCost * 0.08;
@@ -283,7 +268,7 @@ export const TripBooking: React.FC = () => {
     setTransportMode(mode);
     setIsModalOpen(false);
 
-    if (mode === 'flight') {
+    if (mode === 'flight' && !state.liveFlight) {
       fetchFlightQuote();
     }
   };
@@ -291,6 +276,19 @@ export const TripBooking: React.FC = () => {
   const handlePostPaymentFulfillment = async (response: { reference: string }) => {
     const primaryPassenger = passengers[0];
     const primaryFullName = `${primaryPassenger.given_name} ${primaryPassenger.family_name}`.trim();
+
+    // Extract precise flight segment metrics to store in the database
+    const slice = liveFlight?.slices?.[0] || {};
+    const segments = slice.segments || [];
+    const firstSegment = segments[0] || {};
+    const lastSegment = segments[segments.length - 1] || {};
+
+    const resolvedDepartureTime = flightDetails.departureTime || firstSegment.departing_at || `${formData.departureDate}T${formData.departureTime}:00`;
+    const resolvedArrivalTime = lastSegment.arriving_at || '';
+    const resolvedFlightNumber = flightDetails.flightNumber || firstSegment.flight_number || formData.flightNumber || 'NX-404';
+    const resolvedDepartureAirport = flightDetails.departureAirport || slice.origin?.iata_code || convertToIATA(formData.origin, 'LOS');
+    const resolvedArrivalAirport = flightDetails.arrivalAirport || slice.destination?.iata_code || convertToIATA(formData.destination, 'LHR');
+    const resolvedSeatClass = formData.travelClass || flightDetails.seatClass || 'economy';
 
     try {
       const user = await account.get();
@@ -314,6 +312,14 @@ export const TripBooking: React.FC = () => {
           carrier: liveFlight?.airlineName || 'Nexa Air',
           departureDate: formData.departureDate,
           passengers: JSON.stringify(passengers),
+          seatClass: resolvedSeatClass,
+          departureTime: resolvedDepartureTime,
+          arrivalTime: resolvedArrivalTime,
+          
+          flightNumber: resolvedFlightNumber,
+          arrivalAirport: resolvedArrivalAirport,
+       
+          departureAirport: resolvedDepartureAirport,
         });
 
         navigate(`/booking-success/${bookingDoc.$id}`, {
@@ -379,6 +385,14 @@ export const TripBooking: React.FC = () => {
             departureDate: formData.departureDate,
             carrier: carrierName,
             passengers: JSON.stringify(passengers),
+            seatClass: resolvedSeatClass,
+            departureTime: resolvedDepartureTime,
+            arrivalTime: resolvedArrivalTime,
+           
+            flightNumber: resolvedFlightNumber,
+            arrivalAirport: resolvedArrivalAirport,
+           
+            departureAirport: resolvedDepartureAirport,
           }
         );
       }
@@ -470,6 +484,7 @@ export const TripBooking: React.FC = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-8 min-h-screen bg-slate-50/30 font-sans antialiased relative selection:bg-slate-900 selection:text-white">
+      {/* Rest of UI form remains same as original */}
       {isFetchingFlight && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
           <span className="w-6 h-6 border-2 border-slate-950 border-t-transparent rounded-full animate-spin mb-2" />
@@ -612,11 +627,6 @@ export const TripBooking: React.FC = () => {
                     <option value="business">Business Spec</option>
                     <option value="first">First Protocol</option>
                   </select>
-                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
                 </div>
               </div>
             </div>
@@ -728,18 +738,6 @@ export const TripBooking: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="space-y-1.5 pt-2">
-              <label className="text-[9px] font-bold tracking-widest text-slate-400 uppercase font-mono">Special Directives (Optional)</label>
-              <textarea 
-                name="specialRequests"
-                rows={3}
-                value={formData.specialRequests}
-                onChange={handleInputChange}
-                placeholder="Dietary choices, seat configurations, or specific ground luggage handling notes..."
-                className="w-full text-xs font-medium px-3.5 py-3 bg-slate-50/50 border border-slate-200/70 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-all text-slate-800 resize-none"
-              />
             </div>
           </div>
 

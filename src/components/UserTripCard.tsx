@@ -9,12 +9,16 @@ const UserTripCard = ({ id, name, location, imgUrl, tags, price }: TripCardProps
       className='group relative flex flex-col overflow-hidden rounded-[24px] bg-white/70 p-3 backdrop-blur-xl transition-all duration-500 hover:bg-white hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-white/20'
     >
       {/* IMAGE CONTAINER */}
-      <div className="relative h-48 w-full overflow-hidden rounded-[18px]">
-        <img 
-          src={imgUrl} 
-          alt={name} 
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
+      <div className="relative h-48 w-full overflow-hidden rounded-[18px] bg-gray-100 flex items-center justify-center">
+        {imgUrl && imgUrl.trim() !== "" ? (
+          <img 
+            src={imgUrl} 
+            alt={name} 
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        ) : (
+          <span className="text-xs text-gray-400 font-medium">No image available</span>
+        )}
         {/* FLOATING PRICE PILL */}
         <div className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-800 backdrop-blur-md shadow-sm">
           {price}

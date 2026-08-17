@@ -17,7 +17,15 @@ export interface RecommendationBookingData {
   carrier?: string;
   departureDate?: string;
   passengers?: any;
+  seatClass?: string;
+   departureTime: string;
+    arrivalTime: string;
+    flightNumber: string;
+    arrivalAirport:string;
+   departureAirport: string;
+
 }
+
 
 export const createRecommendationBooking = async (bookingData: RecommendationBookingData) => {
   try {

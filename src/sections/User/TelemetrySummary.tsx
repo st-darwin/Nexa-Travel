@@ -29,7 +29,8 @@ const calculateHaversine = (lat1: number, lon1: number, lat2: number, lon2: numb
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return parseFloat((R * c).toFixed(1));
+  const result = R * c;
+  return isNaN(result) ? 0 : parseFloat(result.toFixed(1));
 };
 
 export const GetIdUsingParams = async ({ params }: LoaderFunctionArgs) => {
@@ -86,8 +87,9 @@ export const TelemetrySummary = () => {
     return location.state?.preloadedTrip || raw.trip || BROWSE_RECOMMENDATIONS.find(rec => rec.id === raw.id);
   }, [location.state?.preloadedTrip, raw.trip, raw.id]);
 
+  const safeDistance = useMemo(() => (isNaN(distance) ? 0 : distance), [distance]);
   const estimatedBaseFare = 45.00; 
-  const estimatedDistanceTariff = useMemo(() => distance * 0.08, [distance]); 
+  const estimatedDistanceTariff = useMemo(() => safeDistance * 0.08, [safeDistance]); 
   
   const projectedFlightCost = useMemo(() => estimatedBaseFare + estimatedDistanceTariff, [estimatedDistanceTariff]);
   
@@ -96,7 +98,7 @@ export const TelemetrySummary = () => {
   
   const estimatedGrandTotal = useMemo(() => projectedFlightCost + projectedNexaFee, [projectedFlightCost, projectedNexaFee]);
 
-  const carbonEmissions = useMemo(() => parseFloat((distance * 0.12).toFixed(1)), [distance]);
+  const carbonEmissions = useMemo(() => parseFloat((safeDistance * 0.12).toFixed(1)), [safeDistance]);
   const loadingPercentage = (currentStep / LOADING_STAGES.length) * 100;
 
   useEffect(() => {
@@ -131,13 +133,32 @@ export const TelemetrySummary = () => {
           return;
         }
 
-        let destinationTarget: Coordinates = { lat: 36.3932, lng: 25.4615 }; // Default fallback coordinates (e.g. Santorini)
+        // Robust coordinate resolution supporting arrays, objects, or flat properties
+        let destinationTarget: Coordinates = { lat: 36.3932, lng: 25.4615 }; // Default fallback (Santorini)
 
-        if (activeTrip.location?.coordinates && Array.isArray(activeTrip.location.coordinates)) {
-          const [targetLat, targetLng] = activeTrip.location.coordinates;
-          destinationTarget = { lat: parseFloat(targetLat), lng: parseFloat(targetLng) };
-        } else if (activeTrip.coordinates) {
-          destinationTarget = { lat: parseFloat(activeTrip.coordinates.lat), lng: parseFloat(activeTrip.coordinates.lng) };
+        const rawCoords = activeTrip?.location?.coordinates || activeTrip?.coordinates;
+        if (rawCoords) {
+          if (Array.isArray(rawCoords) && rawCoords.length >= 2) {
+            const parsedLat = parseFloat(rawCoords[0]);
+            const parsedLng = parseFloat(rawCoords[1]);
+            if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+              destinationTarget = { lat: parsedLat, lng: parsedLng };
+            }
+          } else if (typeof rawCoords === 'object' && rawCoords !== null) {
+            const parsedLat = parseFloat(rawCoords.lat ?? rawCoords.latitude);
+            const parsedLng = parseFloat(rawCoords.lng ?? rawCoords.longitude);
+            if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+              destinationTarget = { lat: parsedLat, lng: parsedLng };
+            }
+          }
+        }
+
+        if ((isNaN(destinationTarget.lat) || isNaN(destinationTarget.lng)) && activeTrip?.latitude && activeTrip?.longitude) {
+          const pLat = parseFloat(activeTrip.latitude);
+          const pLng = parseFloat(activeTrip.longitude);
+          if (!isNaN(pLat) && !isNaN(pLng)) {
+            destinationTarget = { lat: pLat, lng: pLng };
+          }
         }
 
         if (!isMounted) return;
@@ -163,7 +184,11 @@ export const TelemetrySummary = () => {
             }
           );
         } else {
-          if (isMounted) setIsCompiling(false);
+          runSimulationSequence(
+            destinationTarget, 
+            { lat: 6.5244, lng: 3.3792 }, 
+            true
+          );
         }
       } catch (error) {
         console.error("Telemetry resolution engine failure:", error);
@@ -179,19 +204,22 @@ export const TelemetrySummary = () => {
   }, [raw.id, activeTrip]);
 
   const handleProceedToBooking = () => {
-    navigate(`/Home/book/${raw.id}`, {
+    navigate(`/Home/custom-flight-search/${raw.id}`, {
       state: {
-        distance,
+        distance: safeDistance,
         flightCost: projectedFlightCost,
         platformFee: projectedNexaFee,
         totalPrice: estimatedGrandTotal,
-        preloadedTrip: activeTrip
+        preloadedTrip: activeTrip,
+        origin: 'LOS',
+        destination: activeTrip?.location?.city || 'LHR',
+        travelClass: 'economy'
       }
     });
   };
 
   const calculateETA = (km: number) => {
-    if (km === 0) return "0m";
+    if (km === 0 || isNaN(km)) return "0m";
     const averageFlightSpeedKmh = 750; 
     const totalHours = km / averageFlightSpeedKmh;
     const hours = Math.floor(totalHours);
@@ -342,7 +370,10 @@ export const TelemetrySummary = () => {
           <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white p-2 relative h-[480px] shadow-xs">
             <MapsComponent 
               id="maps" 
-              centerPosition={{ latitude: (currentLoc.lat + destLoc.lat) / 2, longitude: (currentLoc.lng + destLoc.lng) / 2 }} 
+              centerPosition={{ 
+                latitude: (currentLoc.lat + destLoc.lat) / 2, 
+                longitude: (currentLoc.lng + destLoc.lng) / 2 
+              }} 
               zoomSettings={{ enable: true, zoomFactor: 6 }}
             >
               <Inject services={[Marker, NavigationLine, Zoom]} />
@@ -372,8 +403,8 @@ export const TelemetrySummary = () => {
         {/* Right Column: Analytics & Cost Estimation Card */}
         <div className="lg:col-span-5 space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <MetricCard title="Ground Distance" primaryValue={distance} unit="km" />
-            <MetricCard title="Est. Flight Time" primaryValue={calculateETA(distance)} />
+            <MetricCard title="Ground Distance" primaryValue={safeDistance} unit="km" />
+            <MetricCard title="Est. Flight Time" primaryValue={calculateETA(safeDistance)} />
             <MetricCard title="Route Class" statusMode={true} statusText="AI Explorer Pack" isWarning={false} />
             <MetricCard title="Carbon Footprint" primaryValue={carbonEmissions} unit="kg CO₂" />
           </div>
@@ -445,24 +476,27 @@ interface MetricCardProps {
   isWarning?: boolean;
 }
 
-const MetricCard = ({ title, primaryValue, unit, statusMode, statusText, isWarning }: MetricCardProps) => (
-  <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-2xs flex flex-col justify-between h-[105px] transition-transform duration-300 hover:-translate-y-0.5">
-    <span className="text-[10px] font-bold tracking-widest text-slate-400 block uppercase font-mono">{title}</span>
-    {statusMode ? (
-      <div className="mt-2 flex items-center gap-1.5">
-        <span className={`w-2 h-2 rounded-full ${isWarning ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-ping'}`} />
-        <span className={`text-xs font-black font-mono uppercase tracking-wider ${isWarning ? 'text-amber-600' : 'text-emerald-600'}`}>
-          {statusText}
-        </span>
-      </div>
-    ) : (
-      <div className="flex items-baseline gap-1 mt-2">
-        <span className="text-2xl font-black font-mono text-slate-900 tracking-tight">{primaryValue}</span>
-        {unit && <span className="text-xs font-bold text-slate-400 font-mono uppercase">{unit}</span>}
-      </div>
-    )}
-  </div>
-);
+const MetricCard = ({ title, primaryValue, unit, statusMode, statusText, isWarning }: MetricCardProps) => {
+  const safePrimaryValue = typeof primaryValue === 'number' && isNaN(primaryValue) ? 0 : primaryValue;
+  return (
+    <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-2xs flex flex-col justify-between h-[105px] transition-transform duration-300 hover:-translate-y-0.5">
+      <span className="text-[10px] font-bold tracking-widest text-slate-400 block uppercase font-mono">{title}</span>
+      {statusMode ? (
+        <div className="mt-2 flex items-center gap-1.5">
+          <span className={`w-2 h-2 rounded-full ${isWarning ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-ping'}`} />
+          <span className={`text-xs font-black font-mono uppercase tracking-wider ${isWarning ? 'text-amber-600' : 'text-emerald-600'}`}>
+            {statusText}
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-baseline gap-1 mt-2">
+          <span className="text-2xl font-black font-mono text-slate-900 tracking-tight">{safePrimaryValue}</span>
+          {unit && <span className="text-xs font-bold text-slate-400 font-mono uppercase">{unit}</span>}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface RouteNodeProps {
   title: string;
@@ -471,19 +505,24 @@ interface RouteNodeProps {
   highlightColor: string;
 }
 
-const RouteNode = ({ title, subtitle, coords, highlightColor }: RouteNodeProps) => (
-  <div className="relative group">
-    <span className={`absolute left-[-25px] top-1 w-4 h-4 rounded-full border-4 bg-white ${highlightColor}`} />
-    <div className="grid grid-cols-1 sm:grid-cols-4 items-start gap-1 sm:gap-4">
-      <div className="sm:col-span-1">
-        <span className="text-xs font-bold text-slate-800 block">{title}</span>
-        <span className="text-[10px] text-slate-400 font-medium tracking-tight uppercase font-mono">{subtitle}</span>
-      </div>
-      <div className="sm:col-span-3 bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/50 font-mono text-xs text-slate-600">
-        Lat: <span className="text-slate-900 font-semibold">{coords.lat.toFixed(6)}</span> • Lng: <span className="text-slate-900 font-semibold">{coords.lng.toFixed(6)}</span>
+const RouteNode = ({ title, subtitle, coords, highlightColor }: RouteNodeProps) => {
+  const safeLat = coords && !isNaN(coords.lat) ? coords.lat : 0;
+  const safeLng = coords && !isNaN(coords.lng) ? coords.lng : 0;
+
+  return (
+    <div className="relative group">
+      <span className={`absolute left-[-25px] top-1 w-4 h-4 rounded-full border-4 bg-white ${highlightColor}`} />
+      <div className="grid grid-cols-1 sm:grid-cols-4 items-start gap-1 sm:gap-4">
+        <div className="sm:col-span-1">
+          <span className="text-xs font-bold text-slate-800 block">{title}</span>
+          <span className="text-[10px] text-slate-400 font-medium tracking-tight uppercase font-mono">{subtitle}</span>
+        </div>
+        <div className="sm:col-span-3 bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/50 font-mono text-xs text-slate-600">
+          Lat: <span className="text-slate-900 font-semibold">{safeLat.toFixed(6)}</span> • Lng: <span className="text-slate-900 font-semibold">{safeLng.toFixed(6)}</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default TelemetrySummary;

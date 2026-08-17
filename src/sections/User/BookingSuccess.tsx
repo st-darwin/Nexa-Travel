@@ -24,6 +24,13 @@ interface LiveTicketData {
   carrier: string;
   passengers: TicketPassenger[];
   slices?: TicketSlice[];
+  seatClass?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  FlightNumber?: string;
+  arrivalAirport?: string;
+  departureAirport?: string;
+  destination?: string
 }
 
 interface SuccessState {
@@ -33,6 +40,13 @@ interface SuccessState {
   destination?: string;
   passengerName?: string;
   bookingId?: string;
+  seatClass?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  FlightNumber?: string;
+  arrivalAirport?: string;
+   departureAirport?: string;
+   
 }
 
 export const BookingSuccess = () => {
@@ -90,7 +104,6 @@ export const BookingSuccess = () => {
 
         let doc: any = null;
 
-        // 1. If bookingId exists, try specific lookups (recommendation bookingID, paystackRef, BookingID, bookingID, direct document ID)
         if (bookingId && bookingId !== 'undefined') {
           try {
             const recResponse = await database.listDocuments(
@@ -159,7 +172,6 @@ export const BookingSuccess = () => {
           }
         }
 
-        // 2. Fallback: If doc is not found via bookingId or state is incomplete, fetch using the authenticated user's userId
         if (!doc && activeUser?.$id) {
           try {
             const userTripsRes = await database.listDocuments(
@@ -173,19 +185,6 @@ export const BookingSuccess = () => {
             );
             if (userTripsRes.documents.length > 0) {
               doc = userTripsRes.documents[0];
-            } else {
-              const userTripsResAlt = await database.listDocuments(
-                appwriteConfig.databaseId,
-                appwriteConfig.tripCollectionId,
-                [
-                  Query.equal('userId', activeUser.$id),
-                  Query.orderDesc('$createdAt'),
-                  Query.limit(1)
-                ]
-              );
-              if (userTripsResAlt.documents.length > 0) {
-                doc = userTripsResAlt.documents[0];
-              }
             }
           } catch (userQueryErr) {
             console.warn('Failed to query trips by user ID:', userQueryErr);
@@ -204,19 +203,6 @@ export const BookingSuccess = () => {
               );
               if (userRecsRes.documents.length > 0) {
                 doc = userRecsRes.documents[0];
-              } else {
-                const userRecsResAlt = await database.listDocuments(
-                  appwriteConfig.databaseId,
-                  appwriteConfig.recommendationCollectionId,
-                  [
-                    Query.equal('userId', activeUser.$id),
-                    Query.orderDesc('$createdAt'),
-                    Query.limit(1)
-                  ]
-                );
-                if (userRecsResAlt.documents.length > 0) {
-                  doc = userRecsResAlt.documents[0];
-                }
               }
             } catch (recQueryErr) {
               console.warn('Failed to query recommendations by user ID:', recQueryErr);
@@ -294,18 +280,39 @@ export const BookingSuccess = () => {
           initialState?.bookingId ||
           `NX-${doc.$id.slice(-6).toUpperCase()}`;
 
+        // Extract required database fields
+        const seatClass = doc?.seatClass || parsed?.seatClass || initialState?.seatClass || 'economy';
+        const departureTime = doc?.departureTime || parsed?.departureTime || initialState?.departureTime || '--:--';
+        const arrivalTime = doc?.arrivalTime || parsed?.arrivalTime || initialState?.arrivalTime || '--:--';
+        const flightNumber = doc?.flightNumber || parsed?.FlightNumber || parsed?.flightNumber || initialState?.FlightNumber || 'NX-404';
+        const arrivalAirport = doc?.arrivalAirport || parsed?.arrivalAirport || initialState?.arrivalAirport || resolvedDestination;
+        const departureAirport = doc?.departureAirport || parsed?.departairport || parsed?.departureAirport || initialState?.departairport || 'LOS';
+
         setTicketState({
           price: resolvedPrice,
           mode: resolvedMode,
           passengerName: fetchedName,
           destination: resolvedDestination,
           bookingId: resolvedPNR,
+          seatClass,
+          departureTime,
+          arrivalTime,
+          FlightNumber: flightNumber,
+          arrivalAirport,
+          departureAirport,
           ticket: {
             id: doc.$id,
             bookingReference: resolvedPNR,
             carrier: doc.carrier || parsed?.carrier || (resolvedMode === 'flight' ? 'Nexa Air' : 'Nexa Drive Protocol'),
             passengers: resolvedPassengers,
             slices: parsedSlices,
+            seatClass,
+            departureTime,
+            arrivalTime,
+            FlightNumber: flightNumber,
+            arrivalAirport,
+            departureAirport,
+        
           },
         });
       } catch (err: any) {
@@ -364,7 +371,7 @@ export const BookingSuccess = () => {
     );
   }
 
-  const { ticket, price, mode, destination, passengerName } = ticketState;
+  const { ticket, price, mode, passengerName, seatClass, departureTime, arrivalTime, FlightNumber, arrivalAirport, departureAirport , destination } = ticketState;
 
   const mainPassenger = ticket?.passengers?.[0];
   const displayName =
@@ -526,13 +533,13 @@ export const BookingSuccess = () => {
                 Transit Class
               </span>
               <p className="text-xs font-bold text-zinc-800 uppercase font-mono mt-1 tracking-tight">
-                {mode === 'flight' ? '✈️ Aviation Hub' : '🚗 Ground Route'}
+                {seatClass || 'Economy'}
               </p>
             </div>
 
             <div className="flex flex-col items-center justify-center">
               <div className="text-[8px] font-bold font-mono text-zinc-300 tracking-widest px-2 py-0.5 border border-zinc-100 rounded bg-zinc-50/50">
-                VERIFIED
+                {FlightNumber || 'NX-404'}
               </div>
             </div>
 
@@ -543,6 +550,20 @@ export const BookingSuccess = () => {
               <p className="text-xs font-bold text-zinc-800 font-mono mt-1 uppercase truncate tracking-tight">
                 {mode === 'flight' ? ticket?.carrier || 'Nexa Air' : 'Nexa Drive Protocol'}
               </p>
+            </div>
+          </div>
+
+          {/* Route & Airport / Time Details Displayed from Database */}
+          <div className="bg-zinc-50/60 border border-zinc-200/60 rounded-xl p-4 grid grid-cols-2 gap-4 text-xs font-mono">
+            <div>
+              <span className="text-[8px] font-bold tracking-widest text-zinc-400 uppercase block">Departure Airport</span>
+              <span className="font-bold text-zinc-900 text-sm">{departureAirport || 'LOS'}</span>
+              <span className="text-[10px] text-zinc-500 block mt-0.5">{departureTime}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-[8px] font-bold tracking-widest text-zinc-400 uppercase block">Arrival Airport</span>
+              <span className="font-bold text-zinc-900 text-sm">{arrivalAirport || 'LHR'}</span>
+              <span className="text-[10px] text-zinc-500 block mt-0.5">{arrivalTime}</span>
             </div>
           </div>
 
@@ -594,7 +615,7 @@ export const BookingSuccess = () => {
                 Destination Target
               </span>
               <p className="font-mono text-[11px] font-medium text-zinc-800 truncate max-w-[160px] ml-auto">
-                {destination || 'Global Node'}
+                {arrivalAirport || 'Global Node'} - {destination}
               </p>
             </div>
           </div>
