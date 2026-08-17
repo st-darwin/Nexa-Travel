@@ -384,15 +384,24 @@ const MyItinerary = () => {
             </h1>
             <div className='flex flex-wrap items-center gap-2'>
               <InfoPill text={`${tripData.duration} day plan`} image="/assets/icons/calendar.svg" className="bg-white border border-slate-200/60 shadow-sm" />
-              <InfoPill 
-                text={
-                  Array.isArray(tripData.itinerary)
-                    ? tripData.itinerary.slice(0, 3).map((item: any) => item.location || tripData.location).join(', ')
-                    : tripData.location || tripData.country
-                } 
-                image='/assets/icons/location-mark.svg' 
-                className="bg-white border border-slate-200/60 shadow-sm" 
-              />
+        <InfoPill 
+  text={
+    Array.isArray(tripData.itinerary)
+      ? tripData.itinerary
+          .slice(0, 3)
+          .map((item: any) => {
+            const loc = item.locationName || item.location;
+            return typeof loc === 'object' ? loc?.city : loc;
+          })
+          .filter(Boolean)
+          .join(', ') || 
+        (typeof tripData.location === 'object' ? tripData.location?.city : tripData.location) || 
+        tripData.country
+      : (typeof tripData.location === 'object' ? tripData.location?.city : tripData.location) || tripData.country
+  } 
+  image='/assets/icons/location-mark.svg' 
+  className="bg-white border border-slate-200/60 shadow-sm" 
+/>
             </div>
           </header>
 
