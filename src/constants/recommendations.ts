@@ -21,8 +21,8 @@ export interface RecommendationTrip {
   groupType: string;
   interests: string;
   estimatedPrice: string;
-  imageUrl: string;      // Main fallback/hero image[cite: 1]
-  imageUrls: string[];   // 3 destination-specific images[cite: 1]
+  imageUrl: string;      // Main fallback/hero image
+  imageUrls: string[];   // 3 destination-specific images
   weatherTemp: string;
   weatherCondition: string;
   description: string;
@@ -32,7 +32,29 @@ export interface RecommendationTrip {
   itinerary: RecommendationItineraryDay[];
 }
 
-const BASE_URL = import.meta.env.BASE_URL;
+/**
+ * Helper function to fetch/resolve an image directly from the browser based on the country.
+ */
+export const getCountryImageUrl = (country: string): string => {
+  const countryImageMap: Record<string, string> = {
+    Greece: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80",
+    Italy: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80",
+    Japan: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80",
+    Indonesia: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
+    Switzerland: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=800&q=80",
+    "United Arab Emirates": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
+    "South Africa": "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=800&q=80",
+    Iceland: "https://images.unsplash.com/photo-1504893524553-eefd5dffe0f1?auto=format&fit=crop&w=800&q=80",
+    Canada: "https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=800&q=80",
+    Maldives: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80",
+    Spain: "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=800&q=80",
+    Peru: "https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=800&q=80",
+    "New Zealand": "https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=800&q=80",
+    Morocco: "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=800&q=80"
+  };
+
+  return countryImageMap[country] || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80";
+};
 
 export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
   {
@@ -46,7 +68,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Couple",
     interests: "Beaches & Culinary",
     estimatedPrice: "$3,200",
-    imageUrl: `${BASE_URL}assets/images/card-img-3.png`,
+    imageUrl: getCountryImageUrl("Greece"),
     imageUrls: [
       "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?auto=format&fit=crop&w=800&q=80",
@@ -123,7 +145,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Couple",
     interests: "Coastal & Culinary",
     estimatedPrice: "$2,800",
-    imageUrl: `${BASE_URL}assets/images/card-img-5.png`,
+    imageUrl: getCountryImageUrl("Italy"),
     imageUrls: [
       "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800&q=80",
@@ -191,7 +213,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Solo",
     interests: "History & Nature",
     estimatedPrice: "$1,950",
-    imageUrl: `${BASE_URL}assets/images/card-img-6.png`,
+    imageUrl: getCountryImageUrl("Japan"),
     imageUrls: [
       "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80",
@@ -277,7 +299,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Friends",
     interests: "Wellness & Nature",
     estimatedPrice: "$980",
-    imageUrl: `${BASE_URL}assets/images/card-img-4.png`,
+    imageUrl: getCountryImageUrl("Indonesia"),
     imageUrls: [
       "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=800&q=80",
@@ -354,7 +376,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Family",
     interests: "Hiking & Outdoors",
     estimatedPrice: "$3,600",
-    imageUrl: `${BASE_URL}assets/images/card-img-3.png`,
+    imageUrl: getCountryImageUrl("Switzerland"),
     imageUrls: [
       "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1502784444187-359ac186c5bb?auto=format&fit=crop&w=800&q=80",
@@ -430,7 +452,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Friends",
     interests: "Shopping & Nightlife",
     estimatedPrice: "$2,900",
-    imageUrl: `${BASE_URL}assets/images/card-img-5.png`,
+    imageUrl: getCountryImageUrl("United Arab Emirates"),
     imageUrls: [
       "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=800&q=80",
@@ -498,7 +520,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Couple",
     interests: "Nature & Culinary",
     estimatedPrice: "$2,100",
-    imageUrl: `${BASE_URL}assets/images/card-img-6.png`,
+    imageUrl: getCountryImageUrl("South Africa"),
     imageUrls: [
       "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?auto=format&fit=crop&w=800&q=80",
@@ -584,7 +606,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Solo",
     interests: "Hiking & Nature",
     estimatedPrice: "$2,600",
-    imageUrl: `${BASE_URL}assets/images/card-img-4.png`,
+    imageUrl: getCountryImageUrl("Iceland"),
     imageUrls: [
       "https://images.unsplash.com/photo-1504893524553-eefd5dffe0f1?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1529963183134-61a90db47eaf?auto=format&fit=crop&w=800&q=80",
@@ -661,7 +683,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Friends",
     interests: "Hiking & Photography",
     estimatedPrice: "$1,850",
-    imageUrl: `${BASE_URL}assets/images/card-img-3.png`,
+    imageUrl: getCountryImageUrl("Canada"),
     imageUrls: [
       "https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
@@ -738,7 +760,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Couple",
     interests: "Beaches & Water Activities",
     estimatedPrice: "$4,500",
-    imageUrl: `${BASE_URL}assets/images/card-img-5.png`,
+    imageUrl: getCountryImageUrl("Maldives"),
     imageUrls: [
       "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
@@ -815,7 +837,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Friends",
     interests: "Museums & Culinary",
     estimatedPrice: "$1,650",
-    imageUrl: `${BASE_URL}assets/images/card-img-6.png`,
+    imageUrl: getCountryImageUrl("Spain"),
     imageUrls: [
       "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&w=800&q=80",
@@ -883,7 +905,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Solo",
     interests: "History & Hiking",
     estimatedPrice: "$1,750",
-    imageUrl: `${BASE_URL}assets/images/card-img-4.png`,
+    imageUrl: getCountryImageUrl("Peru"),
     imageUrls: [
       "https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1589308078059-be1415eab4c3?auto=format&fit=crop&w=800&q=80",
@@ -969,7 +991,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Friends",
     interests: "Outdoor Activities",
     estimatedPrice: "$2,700",
-    imageUrl: `${BASE_URL}assets/images/card-img-3.png`,
+    imageUrl: getCountryImageUrl("New Zealand"),
     imageUrls: [
       "https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80",
@@ -1046,7 +1068,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Solo",
     interests: "Shopping & Food",
     estimatedPrice: "$2,100",
-    imageUrl: `${BASE_URL}assets/images/card-img-6.png`,
+    imageUrl: getCountryImageUrl("Japan"),
     imageUrls: [
       "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80",
@@ -1123,7 +1145,7 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     groupType: "Couple",
     interests: "History & Shopping",
     estimatedPrice: "$1,100",
-    imageUrl: `${BASE_URL}assets/images/card-img-5.png`,
+    imageUrl: getCountryImageUrl("Morocco"),
     imageUrls: [
       "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=800&q=80",
