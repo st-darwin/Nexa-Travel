@@ -35,6 +35,7 @@ interface Passenger {
   phone: string;
   dateOfBirth?: string;
   gender?: 'm' | 'f';
+  seatNumber?: string; // Added seat number
 }
 
 const convertToIATA = (locationStr: string, defaultFallback = 'LOS'): string => {
@@ -94,9 +95,9 @@ export const TripBooking: React.FC = () => {
     carrier: flightDetails.carrier || 'Nexa Air',
   });
 
-  const [passengers, setPassengers] = useState<Passenger[]>([
-    { given_name: '', family_name: '', email: '', phone: '', dateOfBirth: '', gender: 'm' }
-  ]);
+const [passengers, setPassengers] = useState<Passenger[]>([
+  { given_name: '', family_name: '', email: '', phone: '', dateOfBirth: '', gender: 'm', seatNumber: '12A' }
+]);
 
   const handlePassengerChange = (index: number, field: keyof Passenger, value: string) => {
     const updated = [...passengers];
@@ -151,12 +152,14 @@ export const TripBooking: React.FC = () => {
         const sanitizedCountry = geo.countryCode === 'MU' ? 'NG' : geo.countryCode || 'NG';
 
         const destinationName = 
-          parsedTrip?.location?.city || 
-          parsedTrip?.location?.name || 
-          parsedTrip?.name || 
-          parsedTrip?.title || 
-          parsedTrip?.destination || 
-          'Destination';
+  typeof parsedTrip?.location === 'string'
+    ? parsedTrip.location
+    : parsedTrip?.location?.city || 
+      parsedTrip?.location?.name || 
+      parsedTrip?.name || 
+      parsedTrip?.title || 
+      parsedTrip?.destination || 
+      'Destination';
 
         if (isMounted) {
           setFormData((prev) => ({
@@ -285,7 +288,13 @@ export const TripBooking: React.FC = () => {
 
     const resolvedDepartureTime = flightDetails.departureTime || firstSegment.departing_at || `${formData.departureDate}T${formData.departureTime}:00`;
     const resolvedArrivalTime = lastSegment.arriving_at || '';
-    const resolvedFlightNumber = flightDetails.flightNumber || firstSegment.flight_number || formData.flightNumber || 'NX-404';
+   const resolvedFlightNumber = 
+  flightDetails.flightNumber || 
+  firstSegment.marketing_carrier_flight_number || 
+  firstSegment.operating_carrier_flight_number || 
+  firstSegment.flight_number || 
+  formData.flightNumber || 
+  'NX-404';
     const resolvedDepartureAirport = flightDetails.departureAirport || slice.origin?.iata_code || convertToIATA(formData.origin, 'LOS');
     const resolvedArrivalAirport = flightDetails.arrivalAirport || slice.destination?.iata_code || convertToIATA(formData.destination, 'LHR');
     const resolvedSeatClass = formData.travelClass || flightDetails.seatClass || 'economy';
@@ -315,6 +324,7 @@ export const TripBooking: React.FC = () => {
           seatClass: resolvedSeatClass,
           departureTime: resolvedDepartureTime,
           arrivalTime: resolvedArrivalTime,
+          
           
           flightNumber: resolvedFlightNumber,
           arrivalAirport: resolvedArrivalAirport,

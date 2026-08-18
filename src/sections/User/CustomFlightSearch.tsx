@@ -469,7 +469,7 @@ export const CustomFlightSearch: React.FC = () => {
     const slice = offer.slices?.[0] || {};
     const segment = slice.segments?.[0] || {};
     const depTime = segment.departing_at || `${departureDate}T12:00:00`;
-    const flightNum = segment.flight_number || 'NX-404';
+    const flightNum = segment.marketing_carrier_flight_number || 'NX-404';
     const depAirport = slice.origin?.iata_code || origin;
     const arrAirport = slice.destination?.iata_code || destination;
 
