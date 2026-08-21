@@ -295,7 +295,7 @@ const [passengers, setPassengers] = useState<Passenger[]>([
   firstSegment.flight_number || 
   formData.flightNumber || 
   'NX-404';
-    const resolvedDepartureAirport = flightDetails.departureAirport || slice.origin?.iata_code || convertToIATA(formData.origin, 'LOS');
+    const resolvedDepartureAirport =  flightDetails.departureAirport || slice.origin?.iata_code || convertToIATA(formData.origin, 'LOS');
     const resolvedArrivalAirport = flightDetails.arrivalAirport || slice.destination?.iata_code || convertToIATA(formData.destination, 'LHR');
     const resolvedSeatClass = formData.travelClass || flightDetails.seatClass || 'economy';
 
@@ -337,7 +337,7 @@ const [passengers, setPassengers] = useState<Passenger[]>([
             price: finalGrandTotal,
             mode: transportMode,
             passengerName: primaryFullName,
-            destination: formData.destination,
+            destination: state.destination,
             bookingId: generatedBookingID,
           },
         });
@@ -592,7 +592,7 @@ const [passengers, setPassengers] = useState<Passenger[]>([
                 <input 
                   type="text" 
                   disabled
-                  value={formData.destination}
+                  value={state.destination}
                   className="w-full text-xs font-bold px-3.5 py-3 bg-slate-50 border border-slate-200/60 rounded-xl text-slate-800 select-none cursor-not-allowed font-mono"
                 />
               </div>

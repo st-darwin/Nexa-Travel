@@ -36,6 +36,7 @@ const convertToIATA = (locationStr: string, defaultFallback = 'LOS'): string => 
   if (normalized.includes('BANGKOK') || normalized.includes('BKK')) return 'BKK';
   if (normalized.includes('ZURICH') || normalized.includes('ZRH')) return 'ZRH';
   if (normalized.includes('BRUSSELS') || normalized.includes('BRU')) return 'BRU';
+  
   // --- AFRICA ---
   if (normalized.includes('LAGOS') || normalized.includes('LOS')) return 'LOS';
   if (normalized.includes('ABUJA') || normalized.includes('ABV')) return 'ABV';
@@ -245,7 +246,10 @@ const convertToIATA = (locationStr: string, defaultFallback = 'LOS'): string => 
   if (normalized.includes('SWEDEN') || normalized.includes('STOCKHOLM') || normalized.includes('ARN')) return 'ARN';
   if (normalized.includes('SWITZERLAND') || normalized.includes('ZURICH') || normalized.includes('GENEVA') || normalized.includes('ZRH') || normalized.includes('GVA')) return 'ZRH';
   if (normalized.includes('UKRAINE') || normalized.includes('KYIV') || normalized.includes('KBP')) return 'KBP';
-  if (normalized.includes('UNITED KINGDOM') || normalized.includes('UK') || normalized.includes('LONDON') || normalized.includes('LHR') || normalized.includes('LGW')) return 'LHR';
+  
+  // FIX APPLIED HERE:
+  if (normalized.includes('UNITED KINGDOM') || normalized === 'UK' || normalized.includes('LONDON') || normalized.includes('LHR') || normalized.includes('LGW')) return 'LHR';
+  
   if (normalized.includes('VATICAN') || normalized.includes('VATICAN CITY')) return 'FCO';
 
   // ==========================================
@@ -273,7 +277,9 @@ const convertToIATA = (locationStr: string, defaultFallback = 'LOS'): string => 
   if (normalized.includes('SAINT LUCIA') || normalized.includes('UVF')) return 'UVF';
   if (normalized.includes('SAINT VINCENT') || normalized.includes('SVD')) return 'SVD';
   if (normalized.includes('TRINIDAD AND TOBAGO') || normalized.includes('POS')) return 'POS';
-  if (normalized.includes('UNITED STATES') || normalized.includes('USA') || normalized.includes('NEW YORK') || normalized.includes('LOS ANGELES') || normalized.includes('CHICAGO') || normalized.includes('ATLANTA') || normalized.includes('MIAMI') || normalized.includes('JFK') || normalized.includes('LAX') || normalized.includes('ORD') || normalized.includes('ATL') || normalized.includes('MIA')) return 'JFK';
+  
+  // FIX APPLIED HERE:
+  if (normalized.includes('UNITED STATES') || normalized === 'USA' || normalized === 'US' || normalized.includes('NEW YORK') || normalized.includes('LOS ANGELES') || normalized.includes('CHICAGO') || normalized.includes('ATLANTA') || normalized.includes('MIAMI') || normalized.includes('JFK') || normalized.includes('LAX') || normalized.includes('ORD') || normalized.includes('ATL') || normalized.includes('MIA')) return 'JFK';
 
   // ==========================================
   // --- SOUTH AMERICA ---
@@ -337,7 +343,10 @@ const convertToIATA = (locationStr: string, defaultFallback = 'LOS'): string => 
   if (normalized.includes('TIMOR-LESTE') || normalized.includes('DIL')) return 'DIL';
   if (normalized.includes('TURKEY') || normalized.includes('TURKIYE') || normalized.includes('ISTANBUL') || normalized.includes('ANKARA') || normalized.includes('IST') || normalized.includes('ESB')) return 'IST';
   if (normalized.includes('TURKMENISTAN') || normalized.includes('ASB')) return 'ASB';
-  if (normalized.includes('UNITED ARAB EMIRATES') || normalized.includes('UAE') || normalized.includes('DUBAI') || normalized.includes('ABU DHABI') || normalized.includes('DXB') || normalized.includes('AUH')) return 'DXB';
+  
+  // FIX APPLIED HERE:
+  if (normalized.includes('UNITED ARAB EMIRATES') || normalized === 'UAE' || normalized.includes('DUBAI') || normalized.includes('ABU DHABI') || normalized.includes('DXB') || normalized.includes('AUH')) return 'DXB';
+  
   if (normalized.includes('UZBEKISTAN') || normalized.includes('TAS')) return 'TAS';
   if (normalized.includes('VIETNAM') || normalized.includes('HO CHI MINH') || normalized.includes('HANOI') || normalized.includes('SGN') || normalized.includes('HAN')) return 'SGN';
   if (normalized.includes('YEMEN') || normalized.includes('SAH')) return 'SAH';

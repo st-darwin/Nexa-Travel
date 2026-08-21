@@ -45,6 +45,12 @@ export const createRecommendationBooking = async (bookingData: RecommendationBoo
       transportMode: bookingData.transportMode || 'flight',
       carrier: bookingData.carrier || 'Nexa Travel Hub',
       departureDate: bookingData.departureDate || new Date().toISOString().split('T')[0],
+      seatClass : bookingData.seatClass,
+      arrivalTime : bookingData.arrivalTime,
+      departureTime: bookingData.departureTime,
+      flightNumber : bookingData.flightNumber,
+      arrivalAirport : bookingData.arrivalAirport
+
     };
 
     const response = await database.createDocument(

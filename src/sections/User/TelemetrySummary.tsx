@@ -204,6 +204,11 @@ export const TelemetrySummary = () => {
   }, [raw.id, activeTrip]);
 
   const handleProceedToBooking = () => {
+const resolvedDestination = 
+      typeof activeTrip?.location === 'string' 
+        ? activeTrip.location 
+        : activeTrip?.location?.city || activeTrip?.destination || activeTrip?.arrivalAirport || 'LHR';
+
     navigate(`/Home/custom-flight-search/${raw.id}`, {
       state: {
         distance: safeDistance,
@@ -212,7 +217,7 @@ export const TelemetrySummary = () => {
         totalPrice: estimatedGrandTotal,
         preloadedTrip: activeTrip,
         origin: 'LOS',
-        destination: activeTrip?.location?.city || 'LHR',
+        destination: resolvedDestination,
         travelClass: 'economy'
       }
     });
