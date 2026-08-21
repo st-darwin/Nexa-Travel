@@ -49,7 +49,8 @@ export const createRecommendationBooking = async (bookingData: RecommendationBoo
       arrivalTime : bookingData.arrivalTime,
       departureTime: bookingData.departureTime,
       flightNumber : bookingData.flightNumber,
-      arrivalAirport : bookingData.arrivalAirport
+      arrivalAirport : bookingData.arrivalAirport,
+      departureAirport : bookingData.departureAirport
 
     };
 
