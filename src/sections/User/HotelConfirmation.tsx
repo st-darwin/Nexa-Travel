@@ -1,9 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Query } from 'appwrite';
 import { database, appwriteConfig } from '../../appwrite/client';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 export const HotelConfirmation = () => {
   const location = useLocation();
@@ -16,8 +15,6 @@ export const HotelConfirmation = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [downloading, setDownloading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  const ticketRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchBookingDetails = async () => {
@@ -51,33 +48,122 @@ export const HotelConfirmation = () => {
     fetchBookingDetails();
   }, [bookingId]);
 
-  const handleDownloadPDF = async () => {
-    const element = ticketRef.current;
-    if (!element) return;
+  const handleDownloadPDF = () => {
+    if (!bookingRecord) return;
 
     try {
       setDownloading(true);
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // Header Background
+      doc.setFillColor(15, 23, 42); // slate-900
+      doc.rect(0, 0, pageWidth, 45, 'F');
+
+      // Header Text
+      doc.setTextColor(148, 163, 184); // slate-400
+      doc.setFontSize(8);
+      doc.text('CONFIRMED BOOKING PASS', 15, 15);
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text(bookingRecord.hotelName || 'Hotel Reservation', 15, 24);
+
+      doc.setFontSize(10);
+      doc.setTextColor(203, 213, 225); // slate-300
+      doc.text(bookingRecord.hotelAddress || '', 15, 32);
+
+      // Reference Box (Right aligned)
+      doc.setFillColor(255, 255, 255, 0.1);
+      doc.roundedRect(pageWidth - 75, 12, 60, 24, 3, 3, 'F');
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(7);
+      doc.text('BOOKING REFERENCE', pageWidth - 70, 18);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.text(bookingRecord.bookingReference || 'N/A', pageWidth - 70, 27);
+
+      // Body Section
+      let currentY = 60;
+      doc.setTextColor(100, 116, 139); // slate-500
+      doc.setFontSize(8);
+
+      // Guest Details Grid
+      const addField = (label: string, value: string, x: number, y: number) => {
+        doc.setTextColor(148, 163, 184);
+        doc.text(label.toUpperCase(), x, y);
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(10);
+        doc.text(value || 'N/A', x, y + 5);
+        doc.setFontSize(8);
+      };
+
+      addField('Primary Guest', bookingRecord.fullName, 15, currentY);
+      addField('Contact Email', bookingRecord.email, pageWidth / 2, currentY);
+
+      currentY += 18;
+      addField('Phone Number', bookingRecord.phoneNumber, 15, currentY);
+      addField('Associated Trip ID', bookingRecord.bookingId, pageWidth / 2, currentY);
+
+      // Special Requests Section
+      if (bookingRecord.specialRequests) {
+        currentY += 20;
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(15, currentY, pageWidth - 30, 20, 2, 2, 'F');
+        doc.setTextColor(148, 163, 184);
+        doc.text('SPECIAL REQUESTS', 20, currentY + 6);
+        doc.setTextColor(51, 65, 85);
+        doc.text(bookingRecord.specialRequests, 20, currentY + 13, { maxWidth: pageWidth - 40 });
+        currentY += 10;
+      }
+
+      // Payment Breakdown Section
+      currentY += 25;
+      doc.setTextColor(148, 163, 184);
+      doc.text('PAYMENT BREAKDOWN', 15, currentY);
+
+      currentY += 4;
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(15, currentY, pageWidth - 30, 35, 3, 3, 'F');
+
+      const addPaymentRow = (label: string, value: string, y: number, isBold = false) => {
+        doc.setTextColor(100, 116, 139);
+        doc.text(label, 22, y);
+        if (isBold) {
+          doc.setTextColor(15, 23, 42);
+          doc.setFontSize(11);
+        } else {
+          doc.setTextColor(15, 23, 42);
+          doc.setFontSize(9);
+        }
+        doc.text(value, pageWidth - 22, y, { align: 'right' });
+        doc.setFontSize(8);
+      };
+
+      addPaymentRow('Payment Status', bookingRecord.paymentStatus || 'Paid', currentY + 10);
+      addPaymentRow('Payment Reference', bookingRecord.paymentReference || 'N/A', currentY + 18);
       
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        // onclone strips or overrides oklch styles injected by Tailwind v4 during canvas parsing
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById('ticket-container');
-          if (clonedElement) {
-            clonedElement.style.color = '#0f172a';
-            clonedElement.style.backgroundColor = '#ffffff';
-          }
-        },
-      });
+      doc.setDrawColor(226, 232, 240);
+      doc.line(22, currentY + 22, pageWidth - 22, currentY + 22);
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      addPaymentRow(
+        `Total Paid (${bookingRecord.currency || 'USD'})`,
+        `$${bookingRecord.totalAmount?.toLocaleString() || 0}`,
+        currentY + 30,
+        true
+      );
 
-      pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
-      pdf.save(`Hotel-Reservation-${bookingRecord?.bookingReference || 'Ticket'}.pdf`);
+      // Footer Notice
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(8);
+      doc.text(
+        'Please present this confirmation pass or your reference number upon check-in at the hotel front desk.',
+        pageWidth / 2,
+        currentY + 55,
+        { align: 'center' }
+      );
+
+      doc.save(`Hotel-Reservation-${bookingRecord?.bookingReference || 'Ticket'}.pdf`);
     } catch (err) {
       console.error('Error generating PDF:', err);
       setError('Failed to download PDF ticket.');
@@ -133,7 +219,7 @@ export const HotelConfirmation = () => {
         )}
 
         {bookingRecord && (
-          <div id="ticket-container" ref={ticketRef} className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             
             {/* Header Banner */}
             <div className="bg-slate-900 text-white p-5 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
