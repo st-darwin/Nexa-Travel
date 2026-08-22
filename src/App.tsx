@@ -28,6 +28,7 @@ import ViewActivePlan from "./sections/User/ViewActivePlan";
 import CustomFlightSearch from "./sections/User/CustomFlightSearch";
 import CustomHotelSearch from "./sections/User/CustomeHostelSearch";
 import CustomHotelBooking from "./sections/User/CustomHotelBooking";
+import HotelConfirmation from "./sections/User/HotelConfirmation";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -76,6 +77,7 @@ const router = createBrowserRouter(
         <Route path="custom-flight-search/:id" element={<CustomFlightSearch/>}/>
         <Route path="hotel-search" element={<CustomHotelSearch/>}/> 
         <Route path= "book-hotel" element={<CustomHotelBooking/>} />
+        <Route path="hotel-confirmation" element= {<HotelConfirmation/>} />
       </Route>
 
       <Route path="/booking-success/:bookingId" element={<BookingSuccess />} />
