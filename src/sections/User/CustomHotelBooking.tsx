@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Query, ID } from 'appwrite';
 import { usePaystackPayment } from 'react-paystack';
-import { database, appwriteConfig, functions } from '../../appwrite/client';
+import {account, database, appwriteConfig, functions } from '../../appwrite/client';
 
 export const CustomHotelBooking = () => {
   const location = useLocation();
@@ -159,6 +159,7 @@ export const CustomHotelBooking = () => {
       }
 
       const bookingData = result.data;
+      const user = await account.get()
 
       // 2. Save record into your 'Hotel_booking' collection table (store hotel details here since we are only passing bookingId forward)
       await database.createDocument(
@@ -172,6 +173,7 @@ export const CustomHotelBooking = () => {
           hotelImageUrl: hotel?.accommodation?.photos?.[0]?.url || '',
           fullName: fullName,
           email: email,
+          userId : user.$id,
           phoneNumber: phoneNumber,
           totalAmount: amountInUSD.toString(),
           currency: 'USD',

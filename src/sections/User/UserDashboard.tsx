@@ -15,6 +15,7 @@ import { TripWeather } from "../../components/TripWeather";
 import WeatherRecommendations from "../../components/WeatherRecommendations";
 import { GetRecommendedTrips } from "../../appwrite/recommendationsBooking";
 import { FlightDetailsModal } from "../../components/FlightDetailsModal";
+import { getHotelBookingsById } from "../../appwrite/Trips";
 
 export interface DashboardTrip {
   id: string;
@@ -35,6 +36,7 @@ export interface DashboardLoaderData {
   totalGenerated: number;
   totalBooked: number;
   currentBookedTrip: DashboardTrip | null;
+  currentHotelBooking: any | null;
   currentPage: number;
   totalPages: number;
   recdoc: any | null;
@@ -43,6 +45,9 @@ export interface DashboardLoaderData {
   isPro: boolean;
   generationsToday: number;
 }
+
+// Function to get all hotel bookings[cite: 3]
+
 
 export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Promise<DashboardLoaderData> => {
   const limit = 6; 
@@ -60,6 +65,17 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
     const normalTripsDocs = normalTripsResult?.trips || [];
     const currentLiveFlight = normalTripsDocs.length > 0 ? normalTripsDocs[0] : null;
     
+    // Fetch hotel bookings using the helper function[cite: 3]
+    let currentHotelBooking = null;
+    try {
+      const hotelBookingsResult = await getHotelBookingsById();
+      if (hotelBookingsResult && hotelBookingsResult.documents.length > 0) {
+        currentHotelBooking = hotelBookingsResult.documents[0]; // Get the first hotel booking[cite: 3]
+      }
+    } catch (hotelError) {
+      console.warn("Could not fetch hotel bookings", hotelError);
+    }
+
     let recdoc = null;
     try {
       recdoc = await GetRecommendedTrips(user.$id, limit, offset);
@@ -138,6 +154,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       totalGenerated: total,
       totalBooked: confirmedCount,
       currentBookedTrip,
+      currentHotelBooking,
       allTrips: mappedTrips,
       currentPage: page,
       totalPages,
@@ -155,6 +172,7 @@ export const UserDashboardLoader = async ({ request }: LoaderFunctionArgs): Prom
       totalGenerated: 0,
       totalBooked: 0,
       currentBookedTrip: null,
+      currentHotelBooking: null,
       currentPage: 1,
       totalPages: 1,
       recdoc: null,
@@ -201,53 +219,53 @@ const UserDashboard = () => {
       />
 
       {/* Subscription / Upgrade Card */}
-    <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden transition-all">
-  {data.isPro && (
-    <div className="absolute -right-10 -top-10 w-32 h-32 bg-zinc-900/[0.02] rounded-full blur-2xl pointer-events-none" />
-  )}
-  
-  <div className="flex items-center gap-4 relative z-10">
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${data.isPro ? 'bg-zinc-900 border-zinc-800 text-white shadow-xs' : 'bg-zinc-50 border-zinc-200/60 text-zinc-600'}`}>
-      {data.isPro ? (
-        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-        </svg>
-      ) : (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-        </svg>
-      )}
-    </div>
-    <div className="space-y-0.5">
-      <div className="flex items-center gap-2 flex-wrap">
-        <h4 className="text-xs font-mono font-bold text-zinc-900 uppercase tracking-wider">
-          {data.isPro ? 'Nexa Pro Tier Active' : 'Free Tier Workspace'}
-        </h4>
+      <div className="bg-white border border-zinc-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden transition-all">
         {data.isPro && (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] font-mono font-bold bg-zinc-100 text-zinc-900 rounded-full border border-zinc-200/80 tracking-wider uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Pro Active
-          </span>
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-zinc-900/[0.02] rounded-full blur-2xl pointer-events-none" />
+        )}
+        
+        <div className="flex items-center gap-4 relative z-10">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${data.isPro ? 'bg-zinc-900 border-zinc-800 text-white shadow-xs' : 'bg-zinc-50 border-zinc-200/60 text-zinc-600'}`}>
+            {data.isPro ? (
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            )}
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="text-xs font-mono font-bold text-zinc-900 uppercase tracking-wider">
+                {data.isPro ? 'Nexa Pro Tier Active' : 'Free Tier Workspace'}
+              </h4>
+              {data.isPro && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] font-mono font-bold bg-zinc-100 text-zinc-900 rounded-full border border-zinc-200/80 tracking-wider uppercase">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Pro Active
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-zinc-500 font-mono">
+              {data.isPro ? 'Unlimited high-speed itinerary generations enabled.' : `Generations used today: ${data.generationsToday} / 3 free trips.`}
+            </p>
+          </div>
+        </div>
+
+        {!data.isPro && (
+          <button
+            type="button"
+            onClick={() => navigate('/Home/upgrade')}
+            className="relative z-10 w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 shrink-0 active:scale-95"
+          >
+            <span>Upgrade to Pro</span>
+          </button>
         )}
       </div>
-      <p className="text-xs text-zinc-500 font-mono">
-        {data.isPro ? 'Unlimited high-speed itinerary generations enabled.' : `Generations used today: ${data.generationsToday} / 3 free trips.`}
-      </p>
-    </div>
-  </div>
 
-  {!data.isPro && (
-    <button
-      type="button"
-      onClick={() => navigate('/Home/upgrade')}
-      className="relative z-10 w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 shrink-0 active:scale-95"
-    >
-      <span>Upgrade to Pro</span>
-    </button>
-  )}
-</div>
-
-      {/* Stats Grid including Pro & Quota Status */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Generated Itineraries */}
         <div
@@ -319,43 +337,119 @@ const UserDashboard = () => {
         </div>
 
         {/* AI Quota & Pro Status Card */}
-  <div className="bg-white border border-zinc-200/60 rounded-2xl p-4 sm:p-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] flex items-center justify-between relative overflow-hidden transition-all duration-300">
-  {data.isPro && (
-    <div className="absolute -right-8 -top-8 w-28 h-28 bg-zinc-900/[0.02] rounded-full blur-xl pointer-events-none" />
-  )}
-  
-  <div className="space-y-1.5 relative z-10">
-    <div className="flex items-center gap-2">
-      <span className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-wider block">
-        {data.isPro ? "Nexa Pro Status" : "AI Quota (Today)"}
-      </span>
-      {data.isPro && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono font-medium bg-zinc-100 text-zinc-700 rounded-full border border-zinc-200/80">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          Pro
-        </span>
-      )}
-    </div>
-    <div className="flex items-baseline gap-2">
-      <span className="text-xl sm:text-2xl font-bold font-mono tracking-tight text-zinc-900">
-        {data.isPro ? "Unlimited" : `${data.generationsToday} / 3`}
-      </span>
-      <span className="text-[11px] text-zinc-400 font-medium">
-        {data.isPro ? "active plan" : "trips used"}
-      </span>
-    </div>
-  </div>
+        <div className="bg-white border border-zinc-200/60 rounded-2xl p-4 sm:p-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] flex items-center justify-between relative overflow-hidden transition-all duration-300">
+          {data.isPro && (
+            <div className="absolute -right-8 -top-8 w-28 h-28 bg-zinc-900/[0.02] rounded-full blur-xl pointer-events-none" />
+          )}
+          
+          <div className="space-y-1.5 relative z-10">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-wider block">
+                {data.isPro ? "Nexa Pro Status" : "AI Quota (Today)"}
+              </span>
+              {data.isPro && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono font-medium bg-zinc-100 text-zinc-700 rounded-full border border-zinc-200/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Pro
+                </span>
+              )}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl sm:text-2xl font-bold font-mono tracking-tight text-zinc-900">
+                {data.isPro ? "Unlimited" : `${data.generationsToday} / 3`}
+              </span>
+              <span className="text-[11px] text-zinc-400 font-medium">
+                {data.isPro ? "active plan" : "trips used"}
+              </span>
+            </div>
+          </div>
 
-  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 relative z-10 ${data.isPro ? "bg-zinc-900 border-zinc-800 text-white shadow-sm" : "bg-zinc-50/80 border-zinc-200/60 text-zinc-500"}`}>
-    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-    </svg>
-  </div>
-</div>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 relative z-10 ${data.isPro ? "bg-zinc-900 border-zinc-800 text-white shadow-sm" : "bg-zinc-50/80 border-zinc-200/60 text-zinc-500"}`}>
+            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       <WeatherRecommendations recommendations={sampleDestinations} />
       <AIBookingRateCard />
+
+      {/* Current Hotel Booked Card */}
+      {data.currentHotelBooking && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400">
+              Current Hotel Booking
+            </h3>
+            <span className="text-[10px] font-mono text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+              </span>
+              Confirmed Stay
+            </span>
+          </div>
+
+          <div className="bg-white border border-zinc-200/80 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-14 h-14 bg-zinc-100 rounded-xl overflow-hidden shrink-0 border border-zinc-200/60">
+                <img 
+                  src={
+                    data.currentHotelBooking.hotelImageUrl || 
+                 
+                    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80"
+                  } 
+                  alt={data.currentHotelBooking.hotelName || data.currentHotelBooking.name || data.currentHotelBooking.title || "Hotel Stay"} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="bg-indigo-50 border border-indigo-200/60 text-indigo-700 text-[9px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-md">
+                    {data.currentHotelBooking.roomType || data.currentHotelBooking.type || data.currentHotelBooking.room || "Hotel Reservation"}
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400 truncate">
+                    ID: #{ data.currentHotelBooking.bookingId ? (data.currentHotelBooking.bookingId).slice(-6).toUpperCase() : data.currentHotelBooking.$id.slice(-6).toUpperCase()}
+                  </span>
+                </div>
+                <h4 className="font-bold text-zinc-900 text-base sm:text-lg truncate">
+                  {data.currentHotelBooking.hotelName || data.currentHotelBooking.name || data.currentHotelBooking.title || "Luxury Accommodation"}
+                </h4>
+                <p className="text-xs text-zinc-500 font-mono truncate">
+                  Location: <strong className="text-zinc-700">{data.currentHotelBooking.location || data.currentHotelBooking.destination || data.currentHotelBooking.city || "Verified City"}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-4 border-t lg:border-t-0 pt-4 lg:pt-0 border-zinc-100">
+              <div className="text-left lg:text-right font-mono">
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block">
+                  Total Rate / Amount
+                </span>
+                <span className="text-sm sm:text-base font-bold text-zinc-900">
+                  ${Number(data.currentHotelBooking.totalAmount || 0).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <button
+                  onClick={() => 
+                    navigate("/Home/hotel-confirmation", { 
+                      state: { 
+                        bookingId: data.currentHotelBooking.bookingId
+                      } 
+                    })
+                  }
+                  className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 shrink-0"
+                >
+                  <span>View Hotel Ticket</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Live Flight */}
       {data.currentLiveFlight && (

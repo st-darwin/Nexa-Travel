@@ -408,11 +408,8 @@ export const createDuffelOrder = async (
   }
 };
 
-
-
 export const getTripByDocId = async (docIdOrBookingId: string) => {
   try {
-    // 1. First, search the normal/flights collection using Query.equal for bookingId or document ID
     const normalResponse = await database.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.normalCollectionID,
@@ -423,7 +420,6 @@ export const getTripByDocId = async (docIdOrBookingId: string) => {
       return normalResponse.documents[0];
     }
 
-    // 2. Fallback: try fetching directly by Appwrite Document ID if listDocuments didn't find a bookingId match
     try {
       const normalDoc = await database.getDocument(
         appwriteConfig.databaseId,
@@ -432,10 +428,9 @@ export const getTripByDocId = async (docIdOrBookingId: string) => {
       );
       if (normalDoc) return normalDoc;
     } catch (e) {
-      // Ignore and proceed to AI trips collection
+      // Ignore
     }
 
-    // 3. Search AI Trips collection by document ID as a final fallback
     const aiTrip = await database.getDocument(
       appwriteConfig.databaseId,
       appwriteConfig.tripCollectionId,
@@ -444,7 +439,7 @@ export const getTripByDocId = async (docIdOrBookingId: string) => {
     return aiTrip;
     
   } catch (error) {
-    console.erorr("Nexa OS :: getTripByDocId Error:", error);
+    console.error("Nexa OS :: getTripByDocId Error:", error); // Fixed typo here
     return null;
   }
 };
@@ -460,7 +455,6 @@ export const updateTripFlightDetails = async (
     arrivalTime: string;
     carrier: string;
     amount?: number;
-
   }
 ) => {
   try {
@@ -476,5 +470,42 @@ export const updateTripFlightDetails = async (
   } catch (error) {
     console.error("Unable to update trip flight parameters:", error);
     throw error;
+  }
+};
+
+// Restored missing hotel query method
+// Fix the loader's local implementation to point to hotelBookingCollectionId
+export const getHotelBookingsById = async () => {
+  try {
+    const user = await account.get();
+    if (!user || !user.$id) {
+      console.log("Nexa OS :: No active user session found for hotel fetch.");
+      return null;
+    }
+    
+    const userId = user.$id;
+    console.log("Nexa OS :: Fetching hotels for User ID:", userId);
+    console.log("Nexa OS :: Target Collection ID:", appwriteConfig.hotelBookingCollectionId);
+
+    const doc = await database.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.hotelBookingCollectionId,
+      [Query.equal("userId", userId), Query.orderDesc("$createdAt")]
+    );
+    
+    console.log("Nexa OS :: Raw Hotel Documents Result:", doc);
+
+    if (doc && doc.documents.length > 0) {
+      doc.documents = doc.documents.map((hotel: any) => ({
+        ...hotel,
+        hotelImageUrl: hotel.hotellImageUrl || hotel.hotelImageUrl || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80",
+        location: hotel.location || hotel.hotelAddress || "Verified Stay",
+      }));
+    }
+    
+    return doc || null;
+  } catch (e) {
+    console.error("Nexa OS :: Error fetching hotel bookings:", e);
+    return null;
   }
 };
