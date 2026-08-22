@@ -206,8 +206,8 @@ export const TelemetrySummary = () => {
   const handleProceedToBooking = () => {
 const resolvedDestination = 
       typeof activeTrip?.location === 'string' 
-        ? activeTrip.location 
-        : activeTrip?.location?.city || activeTrip?.destination || activeTrip?.arrivalAirport || 'LHR';
+        ? activeTrip.location || activeTrip.country 
+        :  activeTrip.country ||  activeTrip?.location?.city || activeTrip?.destination || activeTrip?.arrivalAirport || 'LHR';
 
     navigate(`/Home/custom-flight-search/${raw.id}`, {
       state: {

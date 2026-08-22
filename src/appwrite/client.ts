@@ -12,7 +12,8 @@ export const appwriteConfig = {
  tripCollectionId: import.meta.env.VITE_APPWRITE_TRIPS_COLLECTION_ID ,
  normalCollectionID: import.meta.env.VITE_APPWRITE_NORMALTRIPS_COLLECTION_ID,
  recommendationCollectionId: import.meta.env.VITE_APPWRITE_RECOMMENDATIONS_COLLECTION_ID,
- functionId: import.meta.env.VITE_NEXA_BOOKING_FUNCTION_ID
+ functionId: import.meta.env.VITE_NEXA_BOOKING_FUNCTION_ID,
+ hotelBookingCollectionId: import.meta.env.VITE_APPWRITE_HOSTELBOOKING_COLLECTION_ID,
 }
 
 const client = new Client()

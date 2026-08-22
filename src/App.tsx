@@ -26,6 +26,8 @@ import FlightDetails , {FlightArchiveLoader} from "./sections/User/FLightDetails
 import UpgradePage from "./sections/User/Upgrade";
 import ViewActivePlan from "./sections/User/ViewActivePlan";
 import CustomFlightSearch from "./sections/User/CustomFlightSearch";
+import CustomHotelSearch from "./sections/User/CustomeHostelSearch";
+import CustomHotelBooking from "./sections/User/CustomHotelBooking";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -72,6 +74,8 @@ const router = createBrowserRouter(
         <Route path="upgrade" element={<UpgradePage />} />
         <Route path="ViewActivePlan" element={<ViewActivePlan />} />
         <Route path="custom-flight-search/:id" element={<CustomFlightSearch/>}/>
+        <Route path="hotel-search" element={<CustomHotelSearch/>}/> 
+        <Route path= "book-hotel" element={<CustomHotelBooking/>} />
       </Route>
 
       <Route path="/booking-success/:bookingId" element={<BookingSuccess />} />

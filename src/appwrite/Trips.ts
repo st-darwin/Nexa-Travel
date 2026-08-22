@@ -410,29 +410,41 @@ export const createDuffelOrder = async (
 
 
 
-export const getTripByDocId = async (docId: string) => {
+export const getTripByDocId = async (docIdOrBookingId: string) => {
   try {
-    // 1. Try to fetch from the Normal (Flights) Collection first
-    try {
-      const normalTrip = await database.getDocument(
-        appwriteConfig.databaseId,
-        appwriteConfig.normalCollectionID,
-        docId
-      );
-      if (normalTrip) return normalTrip;
-    } catch (err) {
-      // If not found in normal trips, ignore and fallback to AI trips collection
+    // 1. First, search the normal/flights collection using Query.equal for bookingId or document ID
+    const normalResponse = await database.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.normalCollectionID,
+      [Query.equal("bookingId", docIdOrBookingId)]
+    );
+
+    if (normalResponse.documents.length > 0) {
+      return normalResponse.documents[0];
     }
 
-    // 2. Fallback to AI Trip collection
+    // 2. Fallback: try fetching directly by Appwrite Document ID if listDocuments didn't find a bookingId match
+    try {
+      const normalDoc = await database.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.normalCollectionID,
+        docIdOrBookingId
+      );
+      if (normalDoc) return normalDoc;
+    } catch (e) {
+      // Ignore and proceed to AI trips collection
+    }
+
+    // 3. Search AI Trips collection by document ID as a final fallback
     const aiTrip = await database.getDocument(
       appwriteConfig.databaseId,
       appwriteConfig.tripCollectionId,
-      docId
+      docIdOrBookingId
     );
     return aiTrip;
+    
   } catch (error) {
-    console.error("Nexa OS :: getTripByDocId Error:", error);
+    console.erorr("Nexa OS :: getTripByDocId Error:", error);
     return null;
   }
 };

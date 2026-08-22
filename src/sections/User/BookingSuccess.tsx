@@ -63,6 +63,7 @@ export const BookingSuccess = () => {
   const [, setShared] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isHotelPopupOpen, setIsHotelPopupOpen] = useState(true);
 
   const ticketRef = useRef<HTMLDivElement>(null);
 
@@ -414,6 +415,16 @@ export const BookingSuccess = () => {
     }
   };
 
+  // Function to handle navigating to hotel search with state
+const handleStartHotelBooking = () => {
+  navigate('/Home/hotel-search', {
+    state: {
+      bookingId: pnrCode,
+      arrivalAirport: arrivalAirport,
+    },
+  });
+};
+
   const handleDownloadPDF = async () => {
     if (!ticketRef.current) return;
     setIsDownloading(true);
@@ -468,6 +479,47 @@ export const BookingSuccess = () => {
             <p className="text-[11px] text-slate-500 font-medium">Would you like to download your ticket?</p>
           </div>
         </div>
+
+        {/* Hotel Booking Pop-up Notification */}
+<div
+  className={`fixed top-24 right-6 z-50 w-[90%] max-w-md bg-white/90 backdrop-blur-xl border border-indigo-100 rounded-2xl p-4 transition-all duration-500 ease-out flex items-center justify-between gap-4 shadow-[0_20px_50px_rgba(79,70,229,0.15),inset_0_1px_0_rgba(255,255,255,0.8)] select-none ${
+    isHotelPopupOpen
+      ? 'translate-y-0 opacity-100 scale-100'
+      : '-translate-y-6 opacity-0 scale-95 pointer-events-none'
+  }`}
+>
+  <div className="flex items-center gap-3">
+    <div className="flex-shrink-0 w-9 h-9 bg-indigo-50 border border-indigo-200/60 rounded-xl flex items-center justify-center relative">
+      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-indigo-400 opacity-75" />
+      <svg className="w-4 h-4 text-indigo-600 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    </div>
+
+    <div className="space-y-0.5">
+      <h5 className="text-xs font-bold text-slate-900 tracking-tight">Accommodation Ready</h5>
+      <p className="text-[11px] text-slate-500 font-medium">Start booking your hotel now near {arrivalAirport}</p>
+    </div>
+  </div>
+
+  <div className="flex items-center gap-2">
+    <button
+      onClick={handleStartHotelBooking}
+      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-mono text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-xs"
+    >
+      <span>Book Hotel</span>
+    </button>
+
+    <button
+      onClick={() => setIsHotelPopupOpen(false)}
+      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95"
+    >
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+</div>
 
         <div className="flex items-center gap-2">
           <button
