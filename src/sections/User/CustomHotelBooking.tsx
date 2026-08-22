@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Query, ID } from 'appwrite';
+import { usePaystackPayment } from 'react-paystack';
 import { database, appwriteConfig, functions } from '../../appwrite/client';
 
 export const CustomHotelBooking = () => {
@@ -68,8 +69,7 @@ export const CustomHotelBooking = () => {
         }
 
         if (doc) {
-          // Extract user details dynamically from document fields
-          const name = doc.fullName || doc.passengerName  || doc.name || `${doc.firstName || ''} ${doc.lastName || ''}`.trim();
+          const name = doc.fullName || doc.passengerName || doc.name || `${doc.firstName || ''} ${doc.lastName || ''}`.trim();
           setFullName(name);
           setEmail(doc.email || doc.userEmail || doc.passengerEmail || '');
           setPhoneNumber(doc.phoneNumber || doc.phone || '');
@@ -84,13 +84,44 @@ export const CustomHotelBooking = () => {
     fetchUserBookingContext();
   }, [bookingId]);
 
-  const handleConfirmBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hotel) {
-      setError('No hotel selected. Please go back and select a room.');
-      return;
-    }
+  // Currency Conversion logic: Database amount is in USD, Paystack expects NGN (Kobo)
+  const amountInUSD = parseFloat(hotel?.cheapest_rate_total_amount || '0');
+  const USD_TO_NGN_RATE = 1500; 
+  const amountInNaira = amountInUSD * USD_TO_NGN_RATE;
+  const amountInLowestUnit = Math.round(amountInNaira * 100);
 
+  // Paystack configuration config
+  const paystackConfig = {
+    reference: new Date().getTime().toString(),
+    email: email || 'guest@example.com',
+    amount: amountInLowestUnit > 0 ? amountInLowestUnit : 1000, 
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '', 
+    currency: 'NGN',
+    metadata: {
+      custom_fields: [
+        {
+          display_name: 'Full Name',
+          variable_name: 'full_name',
+          value: fullName,
+        },
+        {
+          display_name: 'Phone Number',
+          variable_name: 'phone_number',
+          value: phoneNumber,
+        },
+        {
+          display_name: 'Hotel Name',
+          variable_name: 'hotel_name',
+          value: hotel?.accommodation?.name || 'Hotel Booking',
+        },
+      ],
+    },
+  };
+
+  const initializePaystackPayment = usePaystackPayment(paystackConfig);
+
+  // Success handler triggered once Paystack confirms payment
+  const handlePaystackSuccess = async (reference: any) => {
     try {
       setSubmitting(true);
       setError(null);
@@ -99,21 +130,22 @@ export const CustomHotelBooking = () => {
       const firstName = nameParts[0] || 'Guest';
       const lastName = nameParts.slice(1).join(' ') || 'User';
 
-      // 1. Call Appwrite Function to execute booking
+      // 1. Call Appwrite Function to execute backend reservation fulfillment
       const execution = await functions.createExecution(
         appwriteConfig.functionId,
         JSON.stringify({
           action: 'create_hotel_order',
           searchResultId: hotel.id,
           rateId: hotel.cheapest_rate_id || 'rate_default',
+          paystackReference: reference.reference,
           guest: {
             first_name: firstName,
             last_name: lastName,
             email: email,
             phone_number: phoneNumber,
             hotelName: hotel.accommodation?.name,
-            amount: hotel.cheapest_rate_total_amount,
-            currency: hotel.cheapest_rate_public_currency || 'USD'
+            amount: amountInUSD,
+            currency: 'USD'
           }
         }),
         false
@@ -123,41 +155,70 @@ export const CustomHotelBooking = () => {
       const result = JSON.parse(rawBody);
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to complete hotel reservation.');
+        throw new Error(result.error || 'Failed to complete hotel reservation processing.');
       }
 
       const bookingData = result.data;
 
-      // 2. Save record into your new 'Hotel_booking' Appwrite collection database table
+      // 2. Save record into your 'Hotel_booking' collection table (store hotel details here since we are only passing bookingId forward)
       await database.createDocument(
         appwriteConfig.databaseId,
-        appwriteConfig.hotelBookingCollectionId, // Ensure this config variable is defined
+        appwriteConfig.hotelBookingCollectionId, 
         ID.unique(),
         {
-          bookingReference: bookingData.bookingReference,
-          hotelName: hotel.accommodation?.name,
+          bookingReference: bookingData.bookingReference || reference.reference,
+          hotelName: hotel?.accommodation?.name || '',
+          hotelAddress: `${hotel?.accommodation?.address?.line_one || ''}, ${hotel?.accommodation?.address?.city_name || ''}`,
+          hotelImageUrl: hotel?.accommodation?.photos?.[0]?.url || '',
           fullName: fullName,
           email: email,
           phoneNumber: phoneNumber,
-          totalAmount: parseFloat(hotel.cheapest_rate_total_amount),
-          currency: hotel.cheapest_rate_public_currency || 'USD',
+          totalAmount: amountInUSD.toString(),
+          currency: 'USD',
           bookingId: bookingId || 'N/A',
           specialRequests: specialRequests || '',
+          paymentStatus: 'Paid',
+          paymentReference: reference.reference,
           createdAt: new Date().toISOString()
         }
       );
 
-      // Navigate to success or confirmation view
-      navigate('/hotel-confirmation', { 
-        state: { bookingConfirmation: bookingData, hotel, bookingId } 
+      // 3. Navigate to confirmation view passing ONLY the bookingId
+      navigate('/Home/hotel-confirmation', { 
+        state: { bookingId } 
       });
 
     } catch (err: any) {
-      console.error('Hotel booking error:', err);
-      setError(err.message || 'An error occurred while confirming your reservation.');
+      console.error('Hotel booking save error:', err);
+      setError(err.message || 'Payment was successful, but saving your reservation encountered an issue. Please contact support.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePaystackClose = () => {
+    setError('Payment window was closed. Complete payment to secure your room.');
+    setSubmitting(false);
+  };
+
+  const handleSubmitClick = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hotel) {
+      setError('No hotel selected. Please go back and select a room.');
+      return;
+    }
+    if (!email || !fullName) {
+      setError('Please ensure your name and email are filled out.');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    initializePaystackPayment({
+      onSuccess: (ref) => handlePaystackSuccess(ref),
+      onClose: () => handlePaystackClose(),
+    });
   };
 
   if (loading) {
@@ -175,11 +236,10 @@ export const CustomHotelBooking = () => {
     <div className="w-full min-h-screen bg-[#F8FAFC] px-4 sm:px-6 lg:px-8 py-8 md:py-12 font-sans">
       <div className="max-w-4xl mx-auto space-y-6">
         
-        {/* Header */}
         <div className="flex items-center justify-between bg-white/90 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-slate-100 shadow-xs">
           <div>
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">
-              Secure Checkout
+              Secure Checkout via Paystack (Converted to NGN)
             </span>
             <h2 className="text-xl font-bold text-slate-900 mt-0.5">Complete Your Hotel Reservation</h2>
           </div>
@@ -198,9 +258,7 @@ export const CustomHotelBooking = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Main Booking Form */}
-          <form onSubmit={handleConfirmBooking} className="lg:col-span-2 bg-white/90 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xs space-y-5">
+          <form onSubmit={handleSubmitClick} className="lg:col-span-2 bg-white/90 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xs space-y-5">
             <h3 className="font-bold text-slate-900 text-base border-b border-slate-100 pb-3">
               Guest Information (Auto-filled)
             </h3>
@@ -244,7 +302,7 @@ export const CustomHotelBooking = () => {
                     required
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="+1 (555) 000-0000"
+                    placeholder="+234 800 000 0000"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-900 transition-all"
                   />
                 </div>
@@ -272,15 +330,14 @@ export const CustomHotelBooking = () => {
               {submitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Processing Reservation...</span>
+                  <span>Processing Payment...</span>
                 </>
               ) : (
-                <span>Confirm & Pay ${hotel?.cheapest_rate_total_amount}</span>
+                <span>Pay NGN {amountInNaira.toLocaleString()} (${amountInUSD.toFixed(2)} USD)</span>
               )}
             </button>
           </form>
 
-          {/* Hotel Summary Card Sidebar */}
           <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-slate-100 shadow-xs space-y-4 h-fit">
             <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3">
               Booking Summary
@@ -303,20 +360,19 @@ export const CustomHotelBooking = () => {
 
             <div className="pt-3 border-t border-slate-100 space-y-2 text-xs font-mono">
               <div className="flex justify-between text-slate-500">
-                <span>Room Rate</span>
-                <span>${hotel?.cheapest_rate_total_amount} {hotel?.cheapest_rate_public_currency}</span>
+                <span>Room Rate (USD)</span>
+                <span>${amountInUSD.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-slate-500">
-                <span>Taxes & Fees</span>
-                <span>Included</span>
+                <span>Exchange Rate</span>
+                <span>1 USD = ₦{USD_TO_NGN_RATE.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-slate-900 font-bold pt-2 border-t border-slate-100 text-sm">
-                <span>Total</span>
-                <span>${hotel?.cheapest_rate_total_amount} {hotel?.cheapest_rate_public_currency}</span>
+                <span>Total (NGN)</span>
+                <span>₦{amountInNaira.toLocaleString()}</span>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
