@@ -9,6 +9,7 @@ export const TicketView: React.FC = () => {
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showHotelModal, setShowHotelModal] = useState(false);
   const ticketRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -156,6 +157,17 @@ export const TicketView: React.FC = () => {
 
     doc.save(`Ticket-${currentBookingRef}.pdf`);
     setShowDownloadModal(false);
+    // Open hotel booking modal next or leave it for user action
+    setShowHotelModal(true);
+  };
+
+  const handleStartHotelBooking = () => {
+    navigate('/Home/hotel-search', {
+      state: {
+        bookingId: currentBookingRef,
+        arrivalAirport: destinationCode,
+      },
+    });
   };
 
   return (
@@ -174,7 +186,10 @@ export const TicketView: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
-                onClick={() => setShowDownloadModal(false)}
+                onClick={() => {
+                  setShowDownloadModal(false);
+                  setShowHotelModal(true);
+                }}
                 className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
               >
                 No, Thanks
@@ -184,6 +199,37 @@ export const TicketView: React.FC = () => {
                 className="w-full py-3 bg-black hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
               >
                 Yes, Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hotel Booking Prompt Popup */}
+      {showHotelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs px-4 animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-[2rem] max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 text-center">
+            <div className="w-12 h-12 bg-slate-100 text-slate-800 rounded-2xl mx-auto flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-black tracking-tight">Need Accommodation?</h3>
+              <p className="text-xs text-slate-500">Explore and book stays seamlessly near {destinationCode}.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => setShowHotelModal(false)}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleStartHotelBooking}
+                className="w-full py-3 bg-black hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
+              >
+                Find Stays
               </button>
             </div>
           </div>
@@ -255,15 +301,13 @@ export const TicketView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 pt-2">
-          {/* Optional secondary download button */}
           <button 
-            onClick={handleDownloadPDF}
+            onClick={() => setShowDownloadModal(true)}
             className="w-1/2 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <span>Download PDF</span>
           </button>
 
-          {/* Main button now redirects home */}
           <button 
             onClick={() => navigate('/Home')}
             className="w-1/2 py-3.5 bg-black hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
