@@ -151,8 +151,6 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     ]
   },
 
-
-
   {
     id: "rec-paris-2",
     name: "City of Light & Romance",
@@ -187,7 +185,44 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     flightNumber: "AF-123",
     departureTime: "11:00 PM",
     arrivalTime: "06:15 AM",
-    itinerary: []
+    itinerary: [
+      {
+        day: 1,
+        title: "Arrival & Classic Parisian Stroll",
+        location: "Le Marais",
+        activities: [
+          { time: "08:00 AM", description: "Check-in at boutique hotel and enjoy a fresh croissant and café au lait." },
+          { time: "03:00 PM", description: "Evening walk along the banks of the Seine and view the Eiffel Tower sparkling." }
+        ]
+      },
+      {
+        day: 2,
+        title: "Louvre Masterpieces & Tuileries Garden",
+        location: "Louvre",
+        activities: [
+          { time: "09:30 AM", description: "Skip-the-line guided tour of the Louvre Museum to see the Mona Lisa and Venus de Milo." },
+          { time: "03:00 PM", description: "Relaxing afternoon stroll through the Jardin des Tuileries." }
+        ]
+      },
+      {
+        day: 3,
+        title: "Montmartre Art & Panoramic Views",
+        location: "Montmartre",
+        activities: [
+          { time: "10:00 AM", description: "Explore the artistic winding streets of Montmartre and visit Sacré-Cœur Basilica." },
+          { time: "06:00 PM", description: "Enjoy a traditional French bistro dinner with fine wine pairings." }
+        ]
+      },
+      {
+        day: 4,
+        title: "Seine River Cruise & Departure",
+        location: "Seine River",
+        activities: [
+          { time: "10:00 AM", description: "Scenic daytime boat cruise down the River Seine." },
+          { time: "03:00 PM", description: "Final souvenir shopping at local boutiques and airport transfer." }
+        ]
+      }
+    ]
   },
   {
     id: "rec-kyoto-3",
@@ -223,7 +258,71 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     flightNumber: "QR-802",
     departureTime: "01:30 PM",
     arrivalTime: "04:45 PM",
-    itinerary: []
+    itinerary: [
+      {
+        day: 1,
+        title: "Arashiyama Bamboo Grove Arrival",
+        location: "Arashiyama",
+        activities: [
+          { time: "05:00 PM", description: "Check-in to a traditional luxury ryokan with hot spring onsen access." },
+          { time: "07:30 PM", description: "Multi-course Kaiseki dinner featuring seasonal local ingredients." }
+        ]
+      },
+      {
+        day: 2,
+        title: "Golden Pavilion & Zen Rock Gardens",
+        location: "Kinkaku-ji",
+        activities: [
+          { time: "09:00 AM", description: "Morning visit to Kinkaku-ji (The Golden Pavilion) reflecting over the pond." },
+          { time: "02:00 PM", description: "Contemplative meditation session at Ryoan-ji zen rock garden." }
+        ]
+      },
+      {
+        day: 3,
+        title: "Fushimi Inari Shrine Trails",
+        location: "Fushimi Inari",
+        activities: [
+          { time: "08:00 AM", description: "Early morning hike through thousands of vibrant red Torii gates." },
+          { time: "01:30 PM", description: "Explore traditional street food markets in Nishiki Market." }
+        ]
+      },
+      {
+        day: 4,
+        title: "Gion District & Geisha Heritage",
+        location: "Gion",
+        activities: [
+          { time: "03:00 PM", description: "Walking tour of historic wooden merchant houses in Gion." },
+          { time: "06:30 PM", description: "Private authentic tea ceremony experience with a tea master." }
+        ]
+      },
+      {
+        day: 5,
+        title: "Historic Kiyomizu-dera Temple",
+        location: "Kiyomizu-dera",
+        activities: [
+          { time: "10:00 AM", description: "Visit Kiyomizu-dera temple perched high on wooden pillars overlooking Kyoto." },
+          { time: "03:00 PM", description: "Pottery shopping along Sannenzaka and Ninenzaka preserved pedestrian streets." }
+        ]
+      },
+      {
+        day: 6,
+        title: "Philosopher's Path Nature Walk",
+        location: "Higashiyama",
+        activities: [
+          { time: "09:30 AM", description: "Stroll along the scenic Philosopher's Stone Path lined with cherry trees." },
+          { time: "02:00 PM", description: "Visit Nanzen-ji temple complex and its historic brick aqueduct." }
+        ]
+      },
+      {
+        day: 7,
+        title: "Farewell Matcha & Departure",
+        location: "Kyoto",
+        activities: [
+          { time: "09:00 AM", description: "Final matcha green tea tasting and souvenir gathering." },
+          { time: "12:00 PM", description: "Transfer to Kansai International Airport for departure flight." }
+        ]
+      }
+    ]
   },
   {
     id: "rec-capetown-4",
@@ -259,7 +358,62 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     flightNumber: "SA-055",
     departureTime: "09:15 AM",
     arrivalTime: "03:45 PM",
-    itinerary: []
+    itinerary: [
+      {
+        day: 1,
+        title: "Arrival & V&A Waterfront Sunset",
+        location: "V&A Waterfront",
+        activities: [
+          { time: "04:00 PM", description: "Check-in at waterfront hotel and explore the bustling harbor area." },
+          { time: "07:00 PM", description: "Welcome dinner at a harbor-facing seafood grill." }
+        ]
+      },
+      {
+        day: 2,
+        title: "Table Mountain Cableway & Camps Bay",
+        location: "Table Mountain",
+        activities: [
+          { time: "09:00 AM", description: "Take the revolving aerial cableway up Table Mountain for city views." },
+          { time: "02:00 PM", description: "Relax and watch the sunset at trendy Camps Bay beach." }
+        ]
+      },
+      {
+        day: 3,
+        title: "Cape Peninsula & Boulders Beach Penguins",
+        location: "Boulders Beach",
+        activities: [
+          { time: "08:30 AM", description: "Scenic coastal drive down Chapman’s Peak to Simon’s Town." },
+          { time: "11:30 AM", description: "Walk among the endangered African penguin colony at Boulders Beach." }
+        ]
+      },
+      {
+        day: 4,
+        title: "Stellenbosch Wine Tasting Experience",
+        location: "Stellenbosch",
+        activities: [
+          { time: "09:30 AM", description: "Private wine tasting tour through historic Cape Dutch vineyards." },
+          { time: "02:30 PM", description: "Gourmet vineyard lunch pairing local wines with artisan cheeses." }
+        ]
+      },
+      {
+        day: 5,
+        title: "Robben Island Historical Tour",
+        location: "Robben Island",
+        activities: [
+          { time: "09:00 AM", description: "Ferry ride to Robben Island and guided tour of the historic prison." },
+          { time: "03:00 PM", description: "Explore colorful homes and vibrant culture in the Bo-Kaap neighborhood." }
+        ]
+      },
+      {
+        day: 6,
+        title: "Botanical Gardens & Departure",
+        location: "Kirstenbosch",
+        activities: [
+          { time: "09:30 AM", description: "Stroll through Kirstenbosch National Botanical Garden canopy walkway." },
+          { time: "01:00 PM", description: "Final curio shopping and airport transfer." }
+        ]
+      }
+    ]
   },
   {
     id: "rec-bali-5",
@@ -295,7 +449,80 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     flightNumber: "EK-398",
     departureTime: "06:00 PM",
     arrivalTime: "10:20 PM",
-    itinerary: []
+    itinerary: [
+      {
+        day: 1,
+        title: "Ubud Jungle Arrival",
+        location: "Ubud",
+        activities: [
+          { time: "02:00 PM", description: "Check-in at a jungle view resort surrounded by tropical greenery." },
+          { time: "06:00 PM", description: "Welcome organic dinner and herbal welcome drink." }
+        ]
+      },
+      {
+        day: 2,
+        title: "Sacred Monkey Forest & Art Market",
+        location: "Ubud",
+        activities: [
+          { time: "09:00 AM", description: "Walk through the Sacred Monkey Forest Sanctuary among playful macaques." },
+          { time: "02:00 PM", description: "Browse traditional wooden crafts at the Ubud Art Market." }
+        ]
+      },
+      {
+        day: 3,
+        title: "Tegallalang Rice Terraces & Swing",
+        location: "Tegallalang",
+        activities: [
+          { time: "08:30 AM", description: "Morning walk through the iconic tiered green Tegallalang rice paddies." },
+          { time: "01:00 PM", description: "Experience the famous jungle swing overlooking the valley." }
+        ]
+      },
+      {
+        day: 4,
+        title: "Tirta Empul Water Purification",
+        location: "Tampak Siring",
+        activities: [
+          { time: "10:00 AM", description: "Participate in a traditional holy spring water cleansing ritual at Tirta Empul." },
+          { time: "03:00 PM", description: "Relaxing traditional Balinese full-body massage." }
+        ]
+      },
+      {
+        day: 5,
+        title: "Canggu Beach Sunset & Surf",
+        location: "Canggu",
+        activities: [
+          { time: "11:00 PM", description: "Transfer to coastal Canggu and check-in to beach villa." },
+          { time: "05:30 PM", description: "Sunset drinks and beachside dining at a trendy beach club." }
+        ]
+      },
+      {
+        day: 6,
+        title: "Cliffside Uluwatu Temple & Kecak Dance",
+        location: "Uluwatu",
+        activities: [
+          { time: "03:30 PM", description: "Visit cliffside Uluwatu Temple perched above the Indian Ocean." },
+          { time: "06:00 PM", description: "Watch the traditional sunset Kecak fire dance performance." }
+        ]
+      },
+      {
+        day: 7,
+        title: "Nusa Penida Island Day Trip",
+        location: "Nusa Penida",
+        activities: [
+          { time: "08:00 AM", description: "Speedboat excursion to see the dramatic cliffs of Kelingking Beach." },
+          { time: "03:00 PM", description: "Snorkeling with manta rays in crystal clear waters." }
+        ]
+      },
+      {
+        day: 8,
+        title: "Morning Yoga & Departure",
+        location: "Ubud",
+        activities: [
+          { time: "08:00 AM", description: "Final rejuvenation yoga class overlooking the lush jungle." },
+          { time: "01:00 PM", description: "Airport transfer for return flight home." }
+        ]
+      }
+    ]
   },
   {
     id: "rec-nyc-6",
@@ -331,7 +558,53 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     flightNumber: "DL-215",
     departureTime: "11:30 AM",
     arrivalTime: "06:00 PM",
-    itinerary: []
+    itinerary: [
+      {
+        day: 1,
+        title: "Times Square & Broadway Arrival",
+        location: "Times Square",
+        activities: [
+          { time: "07:00 PM", description: "Check-in to Manhattan hotel and soak in the neon lights of Times Square." },
+          { time: "08:00 PM", description: "Catch a world-famous Broadway theatre show." }
+        ]
+      },
+      {
+        day: 2,
+        title: "Central Park & Fifth Avenue Shopping",
+        location: "Central Park",
+        activities: [
+          { time: "09:30 AM", description: "Stroll or rent bikes through scenic Central Park and Bethesda Terrace." },
+          { time: "02:00 PM", description: "Luxury window shopping along prestigious Fifth Avenue." }
+        ]
+      },
+      {
+        day: 3,
+        title: "Statue of Liberty & Financial District",
+        location: "Lower Manhattan",
+        activities: [
+          { time: "09:00 AM", description: "Ferry tour to the Statue of Liberty and Ellis Island Immigration Museum." },
+          { time: "02:00 PM", description: "Visit Wall Street and the 9/11 Memorial & Museum." }
+        ]
+      },
+      {
+        day: 4,
+        title: "Brooklyn Bridge & DUMBO Exploration",
+        location: "Brooklyn",
+        activities: [
+          { time: "10:00 AM", description: "Walk across the historic pedestrian span of the Brooklyn Bridge." },
+          { time: "02:00 PM", description: "Explore artsy boutiques and grab pizza in the DUMBO neighborhood." }
+        ]
+      },
+      {
+        day: 5,
+        title: "SUMMIT One Vanderbilt & Departure",
+        location: "Midtown",
+        activities: [
+          { time: "10:00 AM", description: "Immersive panoramic views from SUMMIT One Vanderbilt observation deck." },
+          { time: "02:00 PM", description: "Last-minute souvenir shopping and airport transfer." }
+        ]
+      }
+    ]
   },
   {
     id: "rec-dubai-7",
@@ -367,9 +640,43 @@ export const BROWSE_RECOMMENDATIONS: RecommendationTrip[] = [
     flightNumber: "EK-784",
     departureTime: "02:00 PM",
     arrivalTime: "11:55 PM",
-    itinerary: []
+    itinerary: [
+      {
+        day: 1,
+        title: "Burj Khalifa & Downtown Skyline",
+        location: "Downtown Dubai",
+        activities: [
+          { time: "03:00 PM", description: "Check-in to luxury hotel and visit At the Top observation deck on Burj Khalifa." },
+          { time: "07:00 PM", description: "Watch the synchronized Dubai Fountain water and light show." }
+        ]
+      },
+      {
+        day: 2,
+        title: "Desert Dune Bashing & Bedouin Dinner",
+        location: "Dubai Desert",
+        activities: [
+          { time: "02:30 PM", description: "Thrilling 4x4 dune bashing adventure across golden desert sands." },
+          { time: "07:00 PM", description: "Traditional barbecue dinner under the stars with belly dancing." }
+        ]
+      },
+      {
+        day: 3,
+        title: "Dubai Marina & Palm Jumeirah",
+        location: "Palm Jumeirah",
+        activities: [
+          { time: "10:00 AM", description: "Speedboat tour around the man-made Palm Jumeirah island and Atlantis." },
+          { time: "04:00 PM", description: "Stroll along the luxury yacht-lined Dubai Marina promenade." }
+        ]
+      },
+      {
+        day: 4,
+        title: "Gold Souk Heritage & Departure",
+        location: "Deira",
+        activities: [
+          { time: "10:00 AM", description: "Explore the historic Spice Souk and dazzling Gold Souk markets." },
+          { time: "03:00 PM", description: "Private airport transfer for departure flight." }
+        ]
+      }
+    ]
   }
-  // NOTE: Add these same 6 fields (seatClass, departureAirport, arrivalAirport, 
-  // flightNumber, departureTime, arrivalTime) to the other 14 trips in this array 
-  // matching their respective destinations to completely clear the nulls.
 ];
