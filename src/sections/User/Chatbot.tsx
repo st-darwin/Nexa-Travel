@@ -612,11 +612,11 @@ export const TripConciergeChat: React.FC = () => {
 
           <button
             type="submit"
-            disabled={
+        /*    disabled={
               isCheckingUser ||
               isSubmitting ||
               !input.trim()
-            }
+            }  */
             className="px-6 py-3.5 bg-black hover:bg-slate-800 text-white text-xs font-semibold uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-md active:scale-95 flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Send
