@@ -424,10 +424,12 @@ export const CustomFlightSearch: React.FC = () => {
   const [destination, setDestination] = useState<string>(
     convertToIATA(
       state.destination || 
+      state.preloadedTrip?.location?.country || 
       state.preloadedTrip?.location?.city || 
+
       state.preloadedTrip?.destination || 
-      'LHR', 
-      'LHR'
+      '', 
+      ''
     )
   );
   
@@ -437,7 +439,7 @@ export const CustomFlightSearch: React.FC = () => {
     setIsLoading(true);
     try {
       const sanitizedOrigin = convertToIATA(originCode, 'LOS');
-      const sanitizedDestination = convertToIATA(destCode, 'LHR');
+      const sanitizedDestination = convertToIATA(destCode, '');
 
       const execution = await functions.createExecution(
         appwriteConfig.functionId,

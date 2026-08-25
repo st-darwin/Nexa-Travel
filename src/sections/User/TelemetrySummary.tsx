@@ -204,10 +204,14 @@ export const TelemetrySummary = () => {
   }, [raw.id, activeTrip]);
 
   const handleProceedToBooking = () => {
-const resolvedDestination = 
-      typeof activeTrip?.location === 'string' 
-        ? activeTrip.location || activeTrip.country 
-        :  activeTrip.country ||  activeTrip?.location?.city || activeTrip?.destination || activeTrip?.arrivalAirport || 'LHR';
+const resolvedDestination =
+  typeof activeTrip?.location === 'string'
+    ? activeTrip.location || activeTrip.country
+    : activeTrip.location?.country ||
+      activeTrip?.location?.city ||
+      activeTrip?.destination ||
+      activeTrip?.arrivalAirport ||
+      '';
 
     navigate(`/Home/custom-flight-search/${raw.id}`, {
       state: {

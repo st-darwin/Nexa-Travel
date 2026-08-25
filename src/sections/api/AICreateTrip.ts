@@ -59,6 +59,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           "❄️ Season: temperature range in Celsius (temperature range in Fahrenheit)"
         ],
         "location": {
+         "country": "${country}",
           "city": "name of the main city or region",
           "coordinates": [latitude, longitude],
           "openStreetMap": "link to open street map"
