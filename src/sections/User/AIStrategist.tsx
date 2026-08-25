@@ -1,8 +1,8 @@
 import { useLoaderData, useNavigate, useFetcher } from "react-router-dom";
 import UserHeader from "../../components/UserHeader";
 import { useState, useEffect, useRef } from "react";
-import { Loader2, ChevronDown, Check, Sparkles, Lock } from "lucide-react";
-import { account, database } from "../../appwrite/client";
+import { Loader2, ChevronDown, Check } from "lucide-react";
+import { account, appwriteConfig, database } from "../../appwrite/client";
 import { Query } from "appwrite";
 import { world_map } from "../../constants/world_map";
 import { comboBoxItems, selectItems } from "../../constants";
@@ -141,15 +141,16 @@ const AIStrategist = () => {
 
         // Query the custom 'users' collection using accountId
         const response = await database.listDocuments(
-          '69bb1c70000c9d476c30', // Your Database ID
-          'users',              // Your Collection ID
+          appwriteConfig.databaseId, // Your Database ID
+          appwriteConfig.userCollectionId, // Your Collection ID
           [Query.equal('accountId', user.$id)]
         );
+        const today = new Date().toISOString().split("T")[0];
 
         if (isMounted && response.documents.length > 0) {
           const userDoc = response.documents[0];
           const activePro = userDoc.subscriptionStatus === 'active';
-          const used = Number(userDoc.generationsToday || 0);
+          const used = userDoc.lastGenerationDate === today ? Number(userDoc.generationsToday || 0) : 0;
 
           setIsPro(activePro);
           setGenerationsUsed(used);
@@ -178,9 +179,36 @@ const AIStrategist = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const today = new Date().toISOString().split("T")[0];
 
-    if (!isPro && generationsUsed >= FREE_LIMIT) {
-      setError(`Free generation limit reached (${FREE_LIMIT}/${FREE_LIMIT}). Upgrade to Pro for unlimited AI itineraries!`);
+    try {
+      const currentUser = await account.get();
+      if (!currentUser.$id) {
+        setError("This user is not authenticated");
+        return;
+      }
+
+      const response = await database.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.userCollectionId,
+        [Query.equal("accountId", currentUser.$id)]
+      );
+
+      if (response.documents.length > 0) {
+        const userDoc = response.documents[0];
+        // if the last generation date is today , give me the number of genrations done 
+        // today but if the last date was not today , then the current used is 0
+        const currentUsed = userDoc.lastGenerationDate === today ? Number(userDoc.generationsToday || 0) : 0; // Keep the UI state synchronized too. 
+        setGenerationsUsed(currentUsed);
+        
+        if (!isPro && currentUsed >= FREE_LIMIT) {
+          setError(`Free generation limit reached (${FREE_LIMIT}/${FREE_LIMIT}). Upgrade to Pro for unlimited AI itineraries!`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not verify current generation quota:", err);
+      setError("Unable to verify your generation allowance. Please try again.");
       return;
     }
 
@@ -289,51 +317,50 @@ const AIStrategist = () => {
         />
 
         <section className="mt-6 max-w-4xl mx-auto px-4 sm:px-6">
-           {/* Subscription / Usage Banner */}
-           <div className="mb-6 p-4 sm:p-5 bg-white rounded-2xl border border-zinc-200/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden transition-all duration-300">
-    {/* Subtle ambient background glow for Pro */}
-    {isPro && (
-      <div className="absolute -right-10 -top-10 w-32 h-32 bg-zinc-900/[0.02] rounded-full blur-2xl pointer-events-none" />
-    )}
-    
-    <div className="flex items-center gap-3.5 relative z-10">
-      {/* Minimalist tier badge container */}
-      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-300 ${isPro ? 'bg-zinc-900 border-zinc-800 text-white shadow-xs' : 'bg-zinc-100 border-zinc-200/80 text-zinc-600'}`}>
-        <span className="font-mono text-[10px] font-bold tracking-wider">{isPro ? 'PRO' : 'FREE'}</span>
-      </div>
-      
-      <div className="space-y-0.5">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h4 className="text-xs font-semibold text-zinc-900 tracking-tight">
-            {isPro ? 'Nexa Pro Workspace' : 'Free Tier Workspace'}
-          </h4>
-          {isPro && (
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-800 rounded-full border border-zinc-200/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Active
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-zinc-500 font-normal">
-          {isPro ? 'Unlimited high-speed itinerary generations enabled.' : `Generations used: ${generationsUsed}/${FREE_LIMIT} free trips today.`}
-        </p>
-      </div>
-    </div>
+          {/* Subscription / Usage Banner */}
+          <div className="mb-6 p-4 sm:p-5 bg-white rounded-2xl border border-zinc-200/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden transition-all duration-300">
+            {/* Subtle ambient background glow for Pro */}
+            {isPro && (
+              <div className="absolute -right-10 -top-10 w-32 h-32 bg-zinc-900/[0.02] rounded-full blur-2xl pointer-events-none" />
+            )}
 
-    {!isPro && (
-      <button
-        type="button"
-        onClick={() => navigate('/Home/upgrade')}
-        className="relative z-10 w-full sm:w-auto px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium rounded-xl shadow-xs transition-all duration-200 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 shrink-0 group"
-      >
-        <span>Upgrade to Pro</span>
-        <span className="text-zinc-400 group-hover:translate-x-0.5 transition-transform">→</span>
-      </button>
-    )}
-  </div>
+            <div className="flex items-center gap-3.5 relative z-10">
+              {/* Minimalist tier badge container */}
+              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-300 ${isPro ? 'bg-zinc-900 border-zinc-800 text-white shadow-xs' : 'bg-zinc-100 border-zinc-200/80 text-zinc-600'}`}>
+                <span className="font-mono text-[10px] font-bold tracking-wider">{isPro ? 'PRO' : 'FREE'}</span>
+              </div>
+
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-xs font-semibold text-zinc-900 tracking-tight">
+                    {isPro ? 'Nexa Pro Workspace' : 'Free Tier Workspace'}
+                  </h4>
+                  {isPro && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-800 rounded-full border border-zinc-200/60">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Active
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500 font-normal">
+                  {isPro ? 'Unlimited high-speed itinerary generations enabled.' : `Generations used: ${generationsUsed}/${FREE_LIMIT} free trips today.`}
+                </p>
+              </div>
+            </div>
+
+            {!isPro && (
+              <button
+                type="button"
+                onClick={() => navigate('/Home/upgrade')}
+                className="relative z-10 w-full sm:w-auto px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium rounded-xl shadow-xs transition-all duration-200 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 shrink-0 group"
+              >
+                <span>Upgrade to Pro</span>
+                <span className="text-zinc-400 group-hover:translate-x-0.5 transition-transform">→</span>
+              </button>
+            )}
+          </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
-            
             {/* Form Inputs Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <MinimalSelect
@@ -377,7 +404,6 @@ const AIStrategist = () => {
             {/* MINIMAL MAP SECTION */}
             <div className="relative w-full mt-10">
               <div className="p-4 sm:p-6 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Selected Region</span>
@@ -431,7 +457,6 @@ const AIStrategist = () => {
                     <p className="text-xs font-mono font-medium text-slate-700 mt-0.5">Optimal</p>
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -460,7 +485,6 @@ const AIStrategist = () => {
                 )}
               </button>
             </div>
-
           </form>
         </section>
       </div>
